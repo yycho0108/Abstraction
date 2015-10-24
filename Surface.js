@@ -42,5 +42,6 @@ var Surface = function(gl,shaderProgram,dataObjs) {
         var gl = this.gl;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this["faces"].buf);
         gl.drawElements(gl.TRIANGLES,this["faces"].itemSize*this["faces"].numItem,gl.UNSIGNED_SHORT,0);
+        //gl.drawArrays(gl.TRIANGLES,0,36);
     }
 };

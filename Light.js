@@ -39,6 +39,14 @@ var Light = function(gl,shaderProgram,type){
                     parseFloat(document.getElementById("ambLightG").value),
                     parseFloat(document.getElementById("ambLightB").value)]);
                 break;
+            case "pt":
+                this.set("ptLightPos", [ parseFloat(document.getElementById("ptLightX").value),
+                    parseFloat(document.getElementById("ptLightY").value),
+                    parseFloat(document.getElementById("ptLightZ").value)]);
+                this.set("ptLightCol", [ parseFloat(document.getElementById("ptLightR").value),
+                    parseFloat(document.getElementById("ptLightG").value),
+                    parseFloat(document.getElementById("ptLightB").value)]);
+                break;
         }
 
 

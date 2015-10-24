@@ -7,9 +7,7 @@ var Scene = function(gl,shaderProgram){
     this.gl = gl;
     this.camera = null;
 
-    initUniform(gl,this,shaderProgram,"xFormMat",gl.FLOAT_MAT4);
-    //as the transform matrix involves both camera and surface,
-    //it was imperative to have it here.
+
 
     var that =this;
 
@@ -36,13 +34,15 @@ var Scene = function(gl,shaderProgram){
             o.draw();
         });
     };
-
     this.push = function(name,value){
         this[name].push(value);
     };
     this.set = function(name,value){
         this[name] = value;
     };
+    this.reset = function(gl,shaderProgram){
+        initUniform(gl,this,shaderProgram,"xFormMat",gl.FLOAT_MAT4);
+    }
     this.run = function run(){
         requestAnimationFrame(run);
         for(var i=0;i<that.obj.length;++i){
@@ -51,4 +51,6 @@ var Scene = function(gl,shaderProgram){
         }
         that.draw();
     }
+
+    this.reset(gl,shaderProgram);
 };
