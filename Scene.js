@@ -8,6 +8,8 @@ var Scene = function(gl,shaderProgram){
     this.camera = null;
 
     initUniform(gl,this,shaderProgram,"xFormMat",gl.FLOAT_MAT4);
+    //as the transform matrix involves both camera and surface,
+    //it was imperative to have it here.
 
     var that =this;
 
