@@ -44,7 +44,9 @@ var Scene = function(gl){
         }
 
         that.useTexture.buf = document.getElementById("useTexture").checked;
+        that.shiny.buf = parseFloat(document.getElementById("shiny").value);
         applyUniform(that.gl,that,"useTexture",gl.BOOL);
+        applyUniform(that.gl,that,"shiny",gl.FLOAT);
 
         if(document.getElementById("perFrag").checked){
             that.setProgram(that.gl,shader_2);
@@ -69,5 +71,6 @@ var Scene = function(gl){
         this.shaderProgram = shaderProgram;
         initUniform(this.gl,this,this.shaderProgram,"xFormMat",gl.FLOAT_MAT4);
         initUniform(this.gl,this,this.shaderProgram,"useTexture",gl.BOOL);
+        initUniform(this.gl,this,this.shaderProgram,"shiny",gl.FLOAT);
     }
 };

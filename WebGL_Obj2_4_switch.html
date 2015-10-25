@@ -63,17 +63,21 @@
         varying highp vec2 tCoord;
         varying highp vec4 mvPos;
         varying highp vec4 xFormNorm;
+        varying highp vec4 vP;
+        varying highp vec4 ptLightPosV;
 
         uniform mat4 vMat;
         uniform mat4 mMat;
         uniform mat4 pMat;
-
+        uniform vec3 ptLightPos;
         uniform mat4 xFormMat;
 
 
         void main(void){
         mvPos = vMat*mMat*vec4(vPos,1.0);
         gl_Position = pMat*mvPos;
+        ptLightPosV = vMat*mMat*vec4(ptLightPos,1.0);
+
         tCoord = texCoord;
         xFormNorm = xFormMat * vec4(vNormal,1.0);
         }
@@ -85,19 +89,31 @@
         varying highp vec2 tCoord;
         varying highp vec4 mvPos;
         varying highp vec4 xFormNorm;
+        varying highp vec4 ptLightPosV;
 
         uniform vec3 dirLightDir;
         uniform vec3 dirLightCol;
         uniform vec3 ambLightCol;
-        uniform vec3 ptLightPos;
+
         uniform vec3 ptLightCol;
         uniform sampler2D texSrc;
+
+        uniform float shiny;
         uniform bool useTexture;
 
-        void main(void){
 
-        vec3 ptLightDir = normalize(ptLightPos - mvPos.xyz);
-        vec3 vLight = ambLightCol + dirLightCol*max(dot(xFormNorm.xyz, dirLightDir),0.0) + ptLightCol*max(dot(xFormNorm.xyz,ptLightDir),0.0);
+        void main(void){
+        vec3 ptLightDir = normalize(ptLightPosV.xyz - mvPos.xyz);
+        vec3 norm = normalize(xFormNorm.xyz);
+        vec3 refLightDir = reflect(-ptLightDir,norm);
+
+        float dirLightWeight = max(dot(norm, dirLightDir),0.0);
+        float specLightWeight = pow(max(dot(refLightDir, normalize(-mvPos.xyz)), 0.0),shiny);
+        float ptLightWeight = max(dot(norm,ptLightDir),0.0);
+        float diffuseLightWeight = max(dot(norm, ptLightDir), 0.0);
+
+        vec3 vLight = ambLightCol + dirLightCol*dirLightWeight + ptLightCol*specLightWeight + ptLightCol*diffuseLightWeight;
+
         mediump vec4 texelColor;
         if(useTexture){
             texelColor = texture2D(texSrc,tCoord);
@@ -105,6 +121,7 @@
          else{
             texelColor = vec4(1.0,1.0,1.0,1.0);
             }
+
         gl_FragColor = vec4(vLight*texelColor.rgb,texelColor.a*0.9);
 
         }
@@ -134,10 +151,10 @@
             scene = new Scene(gl);
             scene.setProgram(gl,shader_1);
 
-            loadBox(shader_1);
-            loadWorld(shader_1);
+           // loadBox(shader_1);
+            //loadWorld(shader_1);
             loadBall(shader_1);
-
+            loadTeapot(shader_1);
             var camera = new Camera();
             camera.orientation.offsetPos(0.0,0.0,8.0);
             camera.setProgram(gl,shader_1);
@@ -283,7 +300,29 @@
             var world = new Entity(shaderProgram,surface,texture);
             scene.push("obj",world);
         }
-
+        function loadTeapot(shaderProgram) {
+            var request = new XMLHttpRequest();
+            request.open("GET", "Teapot.json");
+            request.onreadystatechange = function() {
+                if (request.readyState == 4) {
+                    parseTeapot(JSON.parse(request.responseText),shaderProgram);
+                }
+            }
+            request.send();
+        }
+        function parseTeapot(data,shaderProgram){
+            var ptCount = data.vPos.length;
+            var dataObjs = {
+                vPos: dataObj("vPos", new Float32Array(data.vPos),gl.ARRAY_BUFFER,ptCount,3),
+                texCoord: dataObj("texCoord", new Float32Array(data.texCoord), gl.ARRAY_BUFFER, ptCount, 2),
+                vNormal: dataObj("vNormal", new Float32Array(data.vNormal),gl.ARRAY_BUFFER, ptCount, 3),
+                faces: dataObj("faces", new Uint16Array(data.faces),gl.ELEMENT_ARRAY_BUFFER,ptCount/3, 3)
+            };
+            var surface = new Surface(shaderProgram,dataObjs);
+            var texture = new Texture(shaderProgram,"texSrc","image","metalSurf.jpg");
+            var teapot = new Entity(shaderProgram,surface,texture);
+            scene.push("obj",teapot);
+        }
         function loadBox(shaderProgram){
             var vertices = [
                 // Front face
@@ -486,24 +525,42 @@
 
 <input type="checkbox" id="perFrag" checked /> Per-fragment lighting<br/>
 <input type="checkbox" id="useTexture" checked /> Use Texture<br/>
-
-<br>Directional X Component:<br><TEXTAREA id="dirLightX">0.2</TEXTAREA>
-<br>Directional Y Component:<br><TEXTAREA id="dirLightY">0.3</TEXTAREA>
-<br>Directional Z Component:<br><TEXTAREA id="dirLightZ">0.6</TEXTAREA>
-<br>Directional R Component:<br><TEXTAREA id="dirLightR">0.3</TEXTAREA>
-<br>Directional G Component:<br><TEXTAREA id="dirLightG">0.1</TEXTAREA>
-<br>Directional B Component:<br><TEXTAREA id="dirLightB">0.6</TEXTAREA>
-
-<br>Point X Component:<br><TEXTAREA id="ptLightX">0.0</TEXTAREA>
-<br>Point Y Component:<br><TEXTAREA id="ptLightY">0.0</TEXTAREA>
-<br>Point Z Component:<br><TEXTAREA id="ptLightZ">0.0</TEXTAREA>
-<br>Point R Component:<br><TEXTAREA id="ptLightR">0.1</TEXTAREA>
-<br>Point G Component:<br><TEXTAREA id="ptLightG">0.1</TEXTAREA>
-<br>Point B Component:<br><TEXTAREA id="ptLightB">0.1</TEXTAREA>
-
-<br>Ambient R Component:<br><TEXTAREA id="ambLightR">0.3</TEXTAREA>
-<br>Ambient G Component:<br><TEXTAREA id="ambLightG">0.3</TEXTAREA>
-<br>Ambient B Component:<br><TEXTAREA id="ambLightB">0.3</TEXTAREA>
+<table>
+    <tr>
+        <td>Directional Light Dir</td>
+        <td>X :<TEXTAREA id="dirLightX">0.2</TEXTAREA> </td>
+        <td>Y :<TEXTAREA id="dirLightY">0.2</TEXTAREA> </td>
+        <td>Z :<TEXTAREA id="dirLightZ">0.2</TEXTAREA> </td>
+    </tr>
+    <tr>
+        <td>Directional Light Col</td>
+        <td>R :<TEXTAREA id="dirLightR">0.2</TEXTAREA> </td>
+        <td>G :<TEXTAREA id="dirLightG">0.2</TEXTAREA> </td>
+        <td>B :<TEXTAREA id="dirLightB">0.2</TEXTAREA> </td>
+    </tr>
+    <tr>
+        <td>Point Light Pos</td>
+        <td>X :<TEXTAREA id="ptLightX">0.0</TEXTAREA> </td>
+        <td>Y :<TEXTAREA id="ptLightY">0.0</TEXTAREA> </td>
+        <td>Z :<TEXTAREA id="ptLightZ">0.0</TEXTAREA> </td>
+    </tr>
+    <tr>
+        <td>Point Light Col</td>
+        <td>R :<TEXTAREA id="ptLightR">0.0</TEXTAREA> </td>
+        <td>G :<TEXTAREA id="ptLightG">0.0</TEXTAREA> </td>
+        <td>B :<TEXTAREA id="ptLightB">0.0</TEXTAREA> </td>
+    </tr>
+    <tr>
+        <td>Ambient Light Col</td>
+        <td>X :<TEXTAREA id="ambLightR">0.0</TEXTAREA> </td>
+        <td>Y :<TEXTAREA id="ambLightG">0.0</TEXTAREA> </td>
+        <td>Z :<TEXTAREA id="ambLightB">0.0</TEXTAREA> </td>
+    </tr>
+    <tr>
+        <td>Material Shininess</td>
+        <td><TEXTAREA id="shiny">0.3</TEXTAREA></td>
+    </tr>
+</table>
 
 </BODY>
 </HTML>

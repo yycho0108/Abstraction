@@ -25,7 +25,7 @@ var Surface = function(shaderProgram,dataObjs) {
     this.draw = function(){
         var gl = this.gl;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this["faces"].buf);
-        gl.drawElements(gl.TRIANGLES,this["faces"].itemSize*this["faces"].numItem,gl.UNSIGNED_SHORT,0);
+        gl.drawElements(gl.TRIANGLES,this["faces"].numItem*this["faces"].itemSize,gl.UNSIGNED_SHORT,0);
         //gl.drawArrays(gl.TRIANGLES,0,36);
     };
     this.setProgram = function(gl,shaderProgram){

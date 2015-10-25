@@ -50,6 +50,7 @@ var Camera = function(){
         mat4.rotateX(this["vMat"].buf,degToRad(-o.rot.x));
         mat4.rotateY(this["vMat"].buf,degToRad(-o.rot.y));
         mat4.translate(this["vMat"].buf,[-o.pos.x, -o.pos.y, -o.pos.z]);
+
         /*
          mat4.lookAt([o.pos.x, o.pos.y, o.pos.z], [0, 0, 0], [0, 1, 0],this["vMat"].buf);
 
@@ -61,6 +62,7 @@ var Camera = function(){
         var gl = this.gl;
         applyUniform(gl,this,"vMat",gl.FLOAT_MAT4);
         applyUniform(gl,this,"pMat",gl.FLOAT_MAT4);
+       // applyUniform(gl,this,"cPos",gl.FLOAT_VEC3);
     };
     this.setProgram = function(gl,shaderProgram){
 
@@ -69,12 +71,14 @@ var Camera = function(){
             this.shaderProgram = shaderProgram;
             locateUniform(gl,this,shaderProgram,"vMat");
             locateUniform(gl,this,shaderProgram,"pMat");
+            //locateUniform(gl,this,shaderProgram,"cPos");
         }
         else{
             this.gl = gl;
             this.shaderProgram = shaderProgram;
             initUniform(gl,this,shaderProgram,"vMat",gl.FLOAT_MAT4);
             initUniform(gl,this,shaderProgram,"pMat",gl.FLOAT_MAT4);
+            //initUniform(gl,this,shaderProgram,"cPos",gl.FLOAT_VEC3);
         }
 
     };
