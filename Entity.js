@@ -4,10 +4,11 @@
 var angle = 0;
 
 var Entity = function(gl,shaderProgram,surface,texture){ //has surface, texture, position/rotation.
+    this.gl = gl;
     this.surface = surface
     this.texture = texture;//change later
     this.orientation = new Orientation();
-    initUniform(gl,this,shaderProgram,"mMat",gl.FLOAT_MAT4);
+
     this.update = function(){
         mat4.identity(this["mMat"].buf);
 
@@ -22,7 +23,14 @@ var Entity = function(gl,shaderProgram,surface,texture){ //has surface, texture,
         applyUniform(gl,this,"mMat",gl.FLOAT_MAT4);
     };
     this.draw = function(){
-        gl.useProgram(shaderProgram);
+        gl.useProgram(this.shaderProgram);
         this.surface.draw();
     }
+    this.setProgram = function(shaderProgram){
+        this.shaderProgram = shaderProgram;
+        initUniform(gl,this,shaderProgram,"mMat",gl.FLOAT_MAT4);
+    }
+
+    this.setProgram(shaderProgram);
+
 };

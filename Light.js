@@ -1,27 +1,25 @@
 /**
  * Created by jamiecho on 10/23/15.
  */
-var Light = function(gl,shaderProgram,type){
-    this.gl = gl;
-    this.shaderProgram = shaderProgram;
-    this.type = type;
+//Light is applied across programs
+//therefore it will keep multiple copies of the program.
 
-    switch(type){
-        case "pt":
-            initUniform(gl,this,shaderProgram,"ptLightPos", gl.FLOAT_VEC3);
-            initUniform(gl,this,shaderProgram,"ptLightCol", gl.FLOAT_VEC3);
-            break;
-        case "dir":
-            initUniform(gl,this,shaderProgram,"dirLightDir", gl.FLOAT_VEC3);
-            initUniform(gl,this,shaderProgram,"dirLightCol", gl.FLOAT_VEC3);
-            break;
-        case "amb":
-            initUniform(gl,this,shaderProgram,"ambLightCol", gl.FLOAT_VEC3);
-            break;
-    }
+var Light = function(gl,type){
+    var that = this;
+
+    this.construct = function(gl,type) {
+        if (this.gl !== gl) {
+            this.destruct();
+        }
+        this.gl = gl;
+        this.type = type;
+        this.shaderProgram = [];
+    };
 
     this.set = function(name,val){
-        this[name].buf = val;
+        this.shaderProgram.forEach(function(shaderProgram){
+            shaderProgram[name].buf = val;
+        })
     };
     this.update = function(){
         //ONLY APPLIES TO THIS OCCASION.
@@ -52,20 +50,65 @@ var Light = function(gl,shaderProgram,type){
 
         //TO BE WRITTEN LATER
     };
+    this.push = function(name,val){
+        this[name].push(val);
+
+        if(name === "shaderProgram"){
+            switch(that.type){
+                case "pt":
+                    initUniform(that.gl,val,val,"ptLightPos", that.gl.FLOAT_VEC3);
+                    initUniform(that.gl,val,val,"ptLightCol", that.gl.FLOAT_VEC3);
+                    break;
+                case "dir":
+                    initUniform(that.gl,val,val,"dirLightDir", that.gl.FLOAT_VEC3);
+                    initUniform(that.gl,val,val,"dirLightCol", that.gl.FLOAT_VEC3);
+                    break;
+                case "amb":
+                    initUniform(that.gl,val,val,"ambLightCol", that.gl.FLOAT_VEC3);
+                    break;
+            }
+        }
+    }
     this.apply = function(){ //setting light for context
-        var gl = this.gl;
-        switch(this.type){
-            case "dir":
-                applyUniform(gl,this,"dirLightDir",gl.FLOAT_VEC3);
-                applyUniform(gl,this,"dirLightCol",gl.FLOAT_VEC3);
-                break;
+        var gl = that.gl;
+        that.shaderProgram.forEach(function(shaderProgram){
+            switch(that.type){
+                case "dir":
+                    applyUniform(gl,shaderProgram,"dirLightDir",gl.FLOAT_VEC3);
+                    applyUniform(gl,shaderProgram,"dirLightCol",gl.FLOAT_VEC3);
+                    break;
+                case "pt":
+                    applyUniform(gl,shaderProgram,"ptLightPos",gl.FLOAT_VEC3);
+                    applyUniform(gl,shaderProgram,"ptLightCol",gl.FLOAT_VEC3);
+                    break;
+                case "amb":
+                    applyUniform(gl,shaderProgram,"ambLightCol",gl.FLOAT_VEC3);
+                    break;
+            }
+        });
+
+
+    }
+    this.destruct = function(){
+        switch(type){
             case "pt":
-                applyUniform(gl,this,"ptLightPos",gl.FLOAT_VEC3);
-                applyUniform(gl,this,"ptLightCol",gl.FLOAT_VEC3);
+                if(this.ptLightPos !== undefined)
+                    endBuffer(this.gl,this.ptLightPos.buf);
+                if(this.ptLightCol !== undefined)
+                    endBuffer(this.gl,this.ptLightCol.buf);
+                break;
+            case "dir":
+                if(this.dirLightDir !== undefined)
+                    endBuffer(this.gl,this.dirLightDir.buf);
+                if(this.dirLightCol !== undefined)
+                    endBuffer(this.gl,this.dirLightCol.buf);
                 break;
             case "amb":
-                applyUniform(gl,this,"ambLightCol",gl.FLOAT_VEC3);
+                if(this.ambLightCol !== undefined)
+                    endBuffer(this.gl,this.ambLightCol.buf);
                 break;
         }
     }
+
+    this.construct(gl,type);
 };

@@ -1,0 +1,428 @@
+<!DOCTYPE HTML>
+<HTML>
+<META HTTP-EQUIV="content-type" content="text/html charset=utf-8">
+<HEAD>
+    <SCRIPT type = "text/javascript" src="gl-matrix.min.js"></SCRIPT>
+    <SCRIPT type = "vShader" id="perVert_vShader">
+        attribute vec3 vPos;
+        attribute vec2 texCoord;
+        attribute vec3 vNormal;
+
+        varying highp vec2 tCoord;
+        varying highp vec3 vLight;
+
+        uniform mat4 vMat;
+        uniform mat4 mMat;
+        uniform mat4 pMat;
+
+        uniform mat4 xFormMat;
+        uniform vec3 dirLightDir;
+        uniform vec3 dirLightCol;
+        uniform vec3 ambLightCol;
+        uniform vec3 ptLightPos;
+        uniform vec3 ptLightCol;
+
+        void main(void){
+
+        vec4 mvPos = vMat*mMat*vec4(vPos,1.0);
+
+        gl_Position = pMat*mvPos;
+
+        tCoord = texCoord;
+        vec4 xFormNorm = xFormMat * vec4(vNormal,1.0);
+        vec3 ptLightDir = normalize(ptLightPos - mvPos.xyz);
+        vLight = ambLightCol + dirLightCol*max(dot(xFormNorm.xyz, dirLightDir),0.0) + ptLightCol*max(dot(xFormNorm.xyz,ptLightDir),0.0);
+        }
+
+    </SCRIPT>
+    <SCRIPT type = "fShader" id="perVert_fShader">
+        precision mediump float;
+
+        varying highp vec2 tCoord;
+        varying highp vec3 vLight;
+
+        uniform sampler2D texSrc;
+
+        void main(void){
+        mediump vec4 texelColor = texture2D(texSrc,tCoord);
+        gl_FragColor = vec4(vLight*texelColor.rgb,texelColor.a*0.9);
+        }
+    </SCRIPT>
+
+    <SCRIPT type="text/javascript" src="WebglCommon.js"></SCRIPT>
+    <SCRIPT type="text/javascript" src="Orientation.js"></SCRIPT>
+    <SCRIPT type="text/javascript" src="dataObj.js"></SCRIPT>
+    <SCRIPT type="text/javascript" src="Light.js"></SCRIPT>
+    <SCRIPT type="text/javascript" src="Camera.js"></SCRIPT>
+    <SCRIPT type="text/javascript" src="Texture.js"></SCRIPT>
+    <SCRIPT type="text/javascript" src="Surface.js"></SCRIPT>
+    <SCRIPT type="text/javascript" src="Scene.js"></SCRIPT>
+    <SCRIPT type="text/javascript" src="Entity.js"></SCRIPT>
+
+    <SCRIPT type="text/javascript">
+        var scene;
+        function webGLStart(){
+            var gl = initGL(document.getElementById("myCanvas"));
+            var shaderProgram = getProgram(gl,["perVert_vShader", "perVert_fShader"]);
+
+            scene = new Scene(gl);
+            scene.setProgram(gl,shaderProgram);
+
+            loadBox(gl,shaderProgram);
+            loadWorld(gl,shaderProgram);
+            loadBall(gl,shaderProgram);
+
+            var camera = new Camera(gl,shaderProgram);
+            camera.orientation.offsetPos(0.0,0.0,8.0);
+            scene.set("camera",camera);
+
+            var dirLight = new Light(gl,"dir");
+            dirLight.push("shaderProgram", shaderProgram);
+            dirLight.set("dirLightDir",[0.22,0.6,1.0]);
+            dirLight.set("dirLightCol",[0.3,1.0,0.5]);
+
+
+            var ambLight = new Light(gl,"amb");
+            ambLight.push("shaderProgram", shaderProgram);
+            ambLight.set("ambLightCol", [0.2,0.2,0.2]);
+
+            var ptLight = new Light(gl,"pt");
+            ptLight.push("shaderProgram", shaderProgram);
+            ptLight.set("ptLightPos", [0.0,0.0,0.0]);
+            ptLight.set("ptLightCol", [0.3,0.3,0.3]);
+
+            scene.push("light",dirLight);
+            scene.push("light",ambLight);
+            scene.push("light",ptLight);
+            scene.run();
+
+        }
+        //user input
+        var dragObj=null;
+        var prevX=0;
+        var prevY=0;
+        function objFromPt(x,y){
+            return scene.obj[1];
+        }
+        function onMouseUp(ev){
+            dragObj=null;
+        }
+        function onMouseDown(ev){
+            dragObj=objFromPt(ev.clientX,ev.clientY);
+            prevX = ev.clientX;
+            prevY = ev.clientY;
+        }
+        function onMouseMove(ev){
+            var gl = scene.gl;
+            if(dragObj){
+                var p = dragObj.orientation.pos;
+                var q = scene.camera.orientation.pos;
+                var curX = ev.clientX;
+                var curY = ev.clientY;
+                p.x += (curX - prevX)/gl.viewportWidth * (gl.viewportWidth/gl.viewportHeight)*Math.abs(p.z- q.z)*Math.tan(scene.camera.fov/2)*2;
+                p.y -= (curY - prevY)/gl.viewportHeight*Math.abs(p.z- q.z)*Math.tan(scene.camera.fov/2)*2;
+                prevX=curX;
+                prevY=curY;
+            }
+        }
+        var isKeyDown = {};
+        var LEFT = 37;
+        var UP = 38;
+        var RIGHT = 39;
+        var DOWN = 40;
+        var PGUP = 33;
+        var PGDN = 34;
+        function onKeyDown(ev){
+            isKeyDown[ev.keyCode] = true;
+        }
+        function onKeyUp(ev){
+            isKeyDown[ev.keyCode] = false;
+        }
+        function loadWorld(gl,shaderProgram) {
+            var request = new XMLHttpRequest();
+            request.open("GET", "world.txt");
+            request.onreadystatechange = function() {
+                if (request.readyState == 4) {
+                    parseWorld(request.responseText,gl,shaderProgram);
+                }
+            }
+            request.send();
+        }
+
+        function parseWorld(data,gl,shaderProgram){
+            var lines = data.split("\n");
+            var vertexCount = 0;
+            var vertices = [];
+            var texCoord = [];
+            var faces = [];
+            var vNormal = [];
+            var index = 0;
+            var triangle = [];
+            for (var i in lines) {
+                var vals = lines[i].replace(/^\s+/, "").split(/\s+/);
+                if (vals.length == 5 && vals[0] != "//") {
+                    // It is a line describing a vertex; get X, Y and Z first
+
+                    triangle.push(parseFloat(vals[0]));
+                    triangle.push(parseFloat(vals[1]));
+                    triangle.push(parseFloat(vals[2]));
+                    faces.push(index++); //one vertex.
+                    // And then the texture coords
+                    texCoord.push(parseFloat(vals[3]));
+                    texCoord.push(parseFloat(vals[4]));
+
+                    if(triangle.length >= 9){ // = full triangle
+                        vertices = vertices.concat(triangle);
+                        //three vertices...
+                        var v1 = vec3.create([triangle[0],triangle[1],triangle[2]]);
+                        var v2 = vec3.create([triangle[3],triangle[4],triangle[5]]);
+                        var v3 =vec3.create([triangle[6],triangle[7],triangle[8]]);
+                        triangle = [];
+                        var v21 = vec3.create();
+                        vec3.subtract(v2,v1,v21);
+                        var v32 = vec3.create();
+                        vec3.subtract(v3,v2,v32);
+                        var vN = vec3.cross(v21,v32);
+
+                        for(var j=0;j<3;++j){
+                            vNormal = vNormal.concat(vN);
+                        }
+
+
+                    }
+                    vertexCount += 1;
+                }
+            }
+
+            var dataObjs = {
+                vPos: dataObj("vPos", new Float32Array(vertices), gl.ARRAY_BUFFER, vertexCount, 3),
+                texCoord: dataObj("texCoord", new Float32Array(texCoord), gl.ARRAY_BUFFER, vertexCount, 2),
+                vNormal: dataObj("vNormal", new Float32Array(vNormal),gl.ARRAY_BUFFER, vertexCount, 3),
+                faces: dataObj("faces", new Uint16Array(faces),gl.ELEMENT_ARRAY_BUFFER,vertexCount/9, 3)
+            };
+
+            var surface = new Surface(gl,shaderProgram,dataObjs);
+            var texture = new Texture(gl,shaderProgram,"texSrc","image","firefox.png");//change later
+            var f_box = new Entity(gl,shaderProgram,surface,texture);
+            scene.push("obj",f_box);
+        }
+
+        function loadBox(gl,shaderProgram){
+            var vertices = [
+                // Front face
+                -1.0, -1.0,  1.0,
+                1.0, -1.0,  1.0,
+                1.0,  1.0,  1.0,
+                -1.0,  1.0,  1.0,
+
+                // Back face
+                -1.0, -1.0, -1.0,
+                -1.0,  1.0, -1.0,
+                1.0,  1.0, -1.0,
+                1.0, -1.0, -1.0,
+
+                // Top face
+                -1.0,  1.0, -1.0,
+                -1.0,  1.0,  1.0,
+                1.0,  1.0,  1.0,
+                1.0,  1.0, -1.0,
+
+                // Bottom face
+                -1.0, -1.0, -1.0,
+                1.0, -1.0, -1.0,
+                1.0, -1.0,  1.0,
+                -1.0, -1.0,  1.0,
+
+                // Right face
+                1.0, -1.0, -1.0,
+                1.0,  1.0, -1.0,
+                1.0,  1.0,  1.0,
+                1.0, -1.0,  1.0,
+
+                // Left face
+                -1.0, -1.0, -1.0,
+                -1.0, -1.0,  1.0,
+                -1.0,  1.0,  1.0,
+                -1.0,  1.0, -1.0
+            ];
+            var faces = [
+                0,  1,  2,      0,  2,  3,    // front
+                4,  5,  6,      4,  6,  7,    // back
+                8,  9,  10,     8,  10, 11,   // top
+                12, 13, 14,     12, 14, 15,   // bottom
+                16, 17, 18,     16, 18, 19,   // right
+                20, 21, 22,     20, 22, 23    // left
+            ];
+            var texCoord = [
+                // Front
+                0.0,  0.0,
+                1.0,  0.0,
+                1.0,  1.0,
+                0.0,  1.0,
+                // Back
+                0.0,  0.0,
+                1.0,  0.0,
+                1.0,  1.0,
+                0.0,  1.0,
+                // Top
+                0.0,  0.0,
+                1.0,  0.0,
+                1.0,  1.0,
+                0.0,  1.0,
+                // Bottom
+                0.0,  0.0,
+                1.0,  0.0,
+                1.0,  1.0,
+                0.0,  1.0,
+                // Right
+                0.0,  0.0,
+                1.0,  0.0,
+                1.0,  1.0,
+                0.0,  1.0,
+                // Left
+                0.0,  0.0,
+                1.0,  0.0,
+                1.0,  1.0,
+                0.0,  1.0
+            ];
+            var vNormal = [
+                //front
+                0.0,  0.0,  1.0,
+                0.0,  0.0,  1.0,
+                0.0,  0.0,  1.0,
+                0.0,  0.0,  1.0,
+
+                // back
+                0.0,  0.0, -1.0,
+                0.0,  0.0, -1.0,
+                0.0,  0.0, -1.0,
+                0.0,  0.0, -1.0,
+
+                // up
+                0.0,  1.0,  0.0,
+                0.0,  1.0,  0.0,
+                0.0,  1.0,  0.0,
+                0.0,  1.0,  0.0,
+
+                // bottom
+                0.0, -1.0,  0.0,
+                0.0, -1.0,  0.0,
+                0.0, -1.0,  0.0,
+                0.0, -1.0,  0.0,
+
+                // right
+                1.0,  0.0,  0.0,
+                1.0,  0.0,  0.0,
+                1.0,  0.0,  0.0,
+                1.0,  0.0,  0.0,
+                // left
+                -1.0,  0.0,  0.0,
+                -1.0,  0.0,  0.0,
+                -1.0,  0.0,  0.0,
+                -1.0,  0.0,  0.0
+            ]
+
+            var dataObjs = {
+                vPos: dataObj("vPos", new Float32Array(vertices), gl.ARRAY_BUFFER, 24, 3),
+                texCoord: dataObj("texCoord", new Float32Array(texCoord), gl.ARRAY_BUFFER, 24, 2),
+                vNormal: dataObj("vNormal", new Float32Array(vNormal),gl.ARRAY_BUFFER, 24, 3),
+                faces: dataObj("faces", new Uint16Array(faces), gl.ELEMENT_ARRAY_BUFFER, 12, 3)
+            };
+
+            var surface = new Surface(gl,shaderProgram,dataObjs);
+            var texture = new Texture(gl,shaderProgram,"texSrc","image","firefox2.png");//change later
+            var f_box = new Entity(gl,shaderProgram,surface,texture);
+            scene.push("obj",f_box);
+        }
+        function loadBall(gl,shaderProgram){
+            var latitudeBands = 12;
+            var longitudeBands = 12;
+            var radius = 1.0;
+
+            var vPos = [];
+            var vNormal = [];
+            var texCoord = [];
+
+            for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
+                var theta = latNumber * Math.PI / latitudeBands;
+                var sinTheta = Math.sin(theta);
+                var cosTheta = Math.cos(theta);
+
+                for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
+                    var phi = longNumber * 2 * Math.PI / longitudeBands;
+                    var sinPhi = Math.sin(phi);
+                    var cosPhi = Math.cos(phi);
+
+                    var x = cosPhi * sinTheta;
+                    var y = cosTheta;
+                    var z = sinPhi * sinTheta;
+                    var u = 1 - (longNumber / longitudeBands);
+                    var v = 1 - (latNumber / latitudeBands);
+
+                    vNormal.push(x);
+                    vNormal.push(y);
+                    vNormal.push(z);
+                    texCoord.push(u);
+                    texCoord.push(v);
+                    vPos.push(radius * x);
+                    vPos.push(radius * y);
+                    vPos.push(radius * z);
+                }
+            }
+            var faces = [];
+
+            for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
+                for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
+                    var first = (latNumber * (longitudeBands + 1)) + longNumber;
+                    var second = first + longitudeBands + 1;
+                    faces.push(first);
+                    faces.push(second);
+                    faces.push(first + 1);
+
+                    faces.push(second);
+                    faces.push(second + 1);
+                    faces.push(first + 1);
+                }
+            }
+
+            var numVert = latitudeBands*longitudeBands;
+            var dataObjs = {
+                vPos: dataObj("vPos", new Float32Array(vPos), gl.ARRAY_BUFFER, numVert, 3),
+                texCoord: dataObj("texCoord", new Float32Array(texCoord), gl.ARRAY_BUFFER, numVert, 2),
+                vNormal: dataObj("vNormal", new Float32Array(vNormal),gl.ARRAY_BUFFER, numVert, 3),
+                faces: dataObj("faces", new Uint16Array(faces), gl.ELEMENT_ARRAY_BUFFER, numVert*2, 3)
+            };
+
+            var surface = new Surface(gl,shaderProgram,dataObjs);
+            var texture = new Texture(gl,shaderProgram,"texSrc","image","moon.gif");//change later
+            var f_box = new Entity(gl,shaderProgram,surface,texture);
+            scene.push("obj",f_box);
+        }
+
+    </SCRIPT>
+    </HEAD>
+<BODY onload="webGLStart()">
+<CANVAS id="myCanvas" tabindex="0" width="1000" height="1000" onmouseup="onMouseUp(event)"
+        onmousedown="onMouseDown(event)" onmousemove="onMouseMove(event)"
+        onkeydown="onKeyDown(event)" onkeyup="onKeyUp(event)"></CANVAS>
+
+<br>Directional X Component:<br><TEXTAREA id="dirLightX">0.2</TEXTAREA>
+<br>Directional Y Component:<br><TEXTAREA id="dirLightY">0.3</TEXTAREA>
+<br>Directional Z Component:<br><TEXTAREA id="dirLightZ">0.6</TEXTAREA>
+<br>Directional R Component:<br><TEXTAREA id="dirLightR">0.3</TEXTAREA>
+<br>Directional G Component:<br><TEXTAREA id="dirLightG">0.1</TEXTAREA>
+<br>Directional B Component:<br><TEXTAREA id="dirLightB">0.6</TEXTAREA>
+
+<br>Point X Component:<br><TEXTAREA id="ptLightX">0.0</TEXTAREA>
+<br>Point Y Component:<br><TEXTAREA id="ptLightY">0.0</TEXTAREA>
+<br>Point Z Component:<br><TEXTAREA id="ptLightZ">0.0</TEXTAREA>
+<br>Point R Component:<br><TEXTAREA id="ptLightR">0.1</TEXTAREA>
+<br>Point G Component:<br><TEXTAREA id="ptLightG">0.1</TEXTAREA>
+<br>Point B Component:<br><TEXTAREA id="ptLightB">0.1</TEXTAREA>
+
+<br>Ambient R Component:<br><TEXTAREA id="ambLightR">0.3</TEXTAREA>
+<br>Ambient G Component:<br><TEXTAREA id="ambLightG">0.3</TEXTAREA>
+<br>Ambient B Component:<br><TEXTAREA id="ambLightB">0.3</TEXTAREA>
+
+</BODY>
+</HTML>

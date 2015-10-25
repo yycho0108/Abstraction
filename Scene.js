@@ -1,16 +1,10 @@
 /**
  * Created by jamiecho on 10/23/15.
  */
-var Scene = function(gl,shaderProgram){
-    this.obj = [];
-    this.light = [];
-    this.gl = gl;
-    this.camera = null;
-
-
-
+var Scene = function(gl){
     var that =this;
-
+    this.light = [];
+    this.obj = [];
     this.draw = function(){
         var gl = this.gl;
         gl.clearColor(0.0,0.0,0.0,1.0);
@@ -40,9 +34,6 @@ var Scene = function(gl,shaderProgram){
     this.set = function(name,value){
         this[name] = value;
     };
-    this.reset = function(gl,shaderProgram){
-        initUniform(gl,this,shaderProgram,"xFormMat",gl.FLOAT_MAT4);
-    }
     this.run = function run(){
         requestAnimationFrame(run);
         for(var i=0;i<that.obj.length;++i){
@@ -51,6 +42,10 @@ var Scene = function(gl,shaderProgram){
         }
         that.draw();
     }
-
-    this.reset(gl,shaderProgram);
+    this.setProgram = function(gl,shaderProgram){
+        endBuffer(this.gl,this.xFormMat);
+        this.gl = gl;
+        this.shaderProgram = shaderProgram;
+        initUniform(this.gl,this,this.shaderProgram,"xFormMat",gl.FLOAT_MAT4);
+    }
 };
