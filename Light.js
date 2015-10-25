@@ -17,9 +17,27 @@ var Light = function(gl,type){
     };
 
     this.set = function(name,val){
-        this.shaderProgram.forEach(function(shaderProgram){
-            shaderProgram[name].buf = val;
-        })
+
+        if(name == "shaderProgram"){
+            this.destruct();
+            this.shaderProgram = val;
+            switch(that.type){
+                case "pt":
+                    initUniform(that.gl,that,val,"ptLightPos", that.gl.FLOAT_VEC3);
+                    initUniform(that.gl,that,val,"ptLightCol", that.gl.FLOAT_VEC3);
+                    break;
+                case "dir":
+                    initUniform(that.gl,that,val,"dirLightDir", that.gl.FLOAT_VEC3);
+                    initUniform(that.gl,that,val,"dirLightCol", that.gl.FLOAT_VEC3);
+                    break;
+                case "amb":
+                    initUniform(that.gl,that,val,"ambLightCol", that.gl.FLOAT_VEC3);
+                    break;
+            }
+        }
+        else{
+            this[name].buf = val;
+        }
     };
     this.update = function(){
         //ONLY APPLIES TO THIS OCCASION.
@@ -52,42 +70,23 @@ var Light = function(gl,type){
     };
     this.push = function(name,val){
         this[name].push(val);
-
-        if(name === "shaderProgram"){
-            switch(that.type){
-                case "pt":
-                    initUniform(that.gl,val,val,"ptLightPos", that.gl.FLOAT_VEC3);
-                    initUniform(that.gl,val,val,"ptLightCol", that.gl.FLOAT_VEC3);
-                    break;
-                case "dir":
-                    initUniform(that.gl,val,val,"dirLightDir", that.gl.FLOAT_VEC3);
-                    initUniform(that.gl,val,val,"dirLightCol", that.gl.FLOAT_VEC3);
-                    break;
-                case "amb":
-                    initUniform(that.gl,val,val,"ambLightCol", that.gl.FLOAT_VEC3);
-                    break;
-            }
-        }
     }
     this.apply = function(){ //setting light for context
         var gl = that.gl;
-        that.shaderProgram.forEach(function(shaderProgram){
-            switch(that.type){
-                case "dir":
-                    applyUniform(gl,shaderProgram,"dirLightDir",gl.FLOAT_VEC3);
-                    applyUniform(gl,shaderProgram,"dirLightCol",gl.FLOAT_VEC3);
-                    break;
-                case "pt":
-                    applyUniform(gl,shaderProgram,"ptLightPos",gl.FLOAT_VEC3);
-                    applyUniform(gl,shaderProgram,"ptLightCol",gl.FLOAT_VEC3);
-                    break;
-                case "amb":
-                    applyUniform(gl,shaderProgram,"ambLightCol",gl.FLOAT_VEC3);
-                    break;
-            }
-        });
 
-
+        switch(that.type){
+            case "dir":
+                applyUniform(gl,this,"dirLightDir",gl.FLOAT_VEC3);
+                applyUniform(gl,this,"dirLightCol",gl.FLOAT_VEC3);
+                break;
+            case "pt":
+                applyUniform(gl,this,"ptLightPos",gl.FLOAT_VEC3);
+                applyUniform(gl,this,"ptLightCol",gl.FLOAT_VEC3);
+                break;
+            case "amb":
+                applyUniform(gl,this,"ambLightCol",gl.FLOAT_VEC3);
+                break;
+        }
     }
     this.destruct = function(){
         switch(type){

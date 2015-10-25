@@ -1,15 +1,9 @@
 /**
  * Created by jamiecho on 10/23/15.
  */
-var Camera = function(gl,shaderProgram){
-    this.gl = gl;
-    this.shaderProgram = shaderProgram;
+var Camera = function(gl){
     this.orientation = new Orientation();
     this.center = [0,0,0];
-    initUniform(gl,this,shaderProgram,"vMat",gl.FLOAT_MAT4);
-    initUniform(gl,this,shaderProgram,"pMat",gl.FLOAT_MAT4);
-
-
     //for now
     this.fov = 45;
     this.near = 0.1;
@@ -70,6 +64,20 @@ var Camera = function(gl,shaderProgram){
         applyUniform(gl,this,"vMat",gl.FLOAT_MAT4);
         applyUniform(gl,this,"pMat",gl.FLOAT_MAT4);
     };
+    this.setProgram = function(gl,shaderProgram){
+
+        if(this.vMat != undefined && this.pMat != undefined){
+            endBuffer(gl,this.vMat.buf);
+            endBuffer(gl,this.pMat.buf);
+        }
+        this.gl = gl;
+        this.shaderProgram = shaderProgram;
+
+        initUniform(gl,this,this.shaderProgram,"vMat",gl.FLOAT_MAT4);
+        initUniform(gl,this,this.shaderProgram,"pMat",gl.FLOAT_MAT4);
+
+    };
+
 };
 
 //may have to adjust locs based on what program is currently being used...

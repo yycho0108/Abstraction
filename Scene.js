@@ -1,10 +1,14 @@
 /**
  * Created by jamiecho on 10/23/15.
  */
+    var beginTime = new Date().getTime();
+
 var Scene = function(gl){
     var that =this;
     this.light = [];
     this.obj = [];
+    this.camera = null;
+
     this.draw = function(){
         var gl = this.gl;
         gl.clearColor(0.0,0.0,0.0,1.0);
@@ -37,8 +41,23 @@ var Scene = function(gl){
     this.run = function run(){
         requestAnimationFrame(run);
         for(var i=0;i<that.obj.length;++i){
-            if(!that.obj[i].texture.ready())
+            if(!that.obj[i].texture.ready)
             return;
+        }
+
+        if(document.getElementById("perFrag").checked){
+            that.setProgram(that.gl,shader_2);
+            that.camera.setProgram(gl,shader_2);
+            that.light.forEach(function(l){l.set("shaderProgram",shader_2);});
+            that.obj.forEach(function(o){o.setProgram(gl,shader_2);});
+            that.gl.useProgram(shader_2);
+        }
+        else{
+            that.setProgram(that.gl,shader_1);
+            that.camera.setProgram(gl,shader_1);
+            that.light.forEach(function(l){l.set("shaderProgram",shader_1);});
+            that.obj.forEach(function(o){o.setProgram(gl,shader_1);});
+            that.gl.useProgram(shader_1);
         }
         that.draw();
     }
