@@ -7,7 +7,7 @@
 //normals
 //texCoord
 
-var Surface = function(gl,shaderProgram,dataObjs) {
+var Surface = function(shaderProgram,dataObjs) {
     var that = this;
     this.names = Object.keys(dataObjs);
     this.update = function(){
@@ -27,19 +27,35 @@ var Surface = function(gl,shaderProgram,dataObjs) {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this["faces"].buf);
         gl.drawElements(gl.TRIANGLES,this["faces"].itemSize*this["faces"].numItem,gl.UNSIGNED_SHORT,0);
         //gl.drawArrays(gl.TRIANGLES,0,36);
-    }
+    };
     this.setProgram = function(gl,shaderProgram){
-        that.gl = gl;
-        that.shaderProgram = shaderProgram;
-        this.names.forEach(function(name){
-            var d = dataObjs[name];
-            if((dataObjs[name].target != that.gl.ELEMENT_ARRAY_BUFFER)){
-                initAttribute(that.gl,that,that.shaderProgram,d.name,d.val,d.target,d.numItem,d.itemSize);
-            }
-            else{
-                that[name] = initBuffer(that.gl, d.val, d.target, d.numItem, d.itemSize);
-            }
-        });
-    }
-    this.setProgram(gl,shaderProgram);
+        if(this.gl !== undefined){
+            this.gl = gl;
+            this.shaderProgram = shaderProgram;
+            this.names.forEach(function(name){
+                var d = dataObjs[name];
+                if((dataObjs[name].target != that.gl.ELEMENT_ARRAY_BUFFER)){
+                    locateAttribute(that.gl,that,that.shaderProgram,d.name);
+                }
+                else{
+                    locateAttribute(that.gl,that,that.shaderProgram, d.name);
+                }
+            });
+        }
+        else{
+            this.gl = gl;
+            this.shaderProgram = shaderProgram;
+            this.names.forEach(function(name){
+                var d = dataObjs[name];
+                if((dataObjs[name].target != that.gl.ELEMENT_ARRAY_BUFFER)){
+                    initAttribute(that.gl,that,that.shaderProgram,d.name,d.val,d.target,d.numItem,d.itemSize);
+                }
+                else{
+                    that[name] = initBuffer(that.gl, d.val, d.target, d.numItem, d.itemSize);
+                }
+            });
+        }
+
+    };
+    //this.setProgram(gl,shaderProgram);
 };

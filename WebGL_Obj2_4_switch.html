@@ -42,10 +42,16 @@
         varying highp vec3 vLight;
 
         uniform sampler2D texSrc;
-
+        uniform bool useTexture;
 
         void main(void){
-        mediump vec4 texelColor = texture2D(texSrc,tCoord);
+        mediump vec4 texelColor;
+        if(useTexture){
+            texelColor = texture2D(texSrc,tCoord);
+            }
+         else{
+            texelColor = vec4(1.0,1.0,1.0,1.0);
+            }
         gl_FragColor = vec4(vLight*texelColor.rgb,texelColor.a*0.9);
         }
     </SCRIPT>
@@ -86,12 +92,19 @@
         uniform vec3 ptLightPos;
         uniform vec3 ptLightCol;
         uniform sampler2D texSrc;
+        uniform bool useTexture;
 
         void main(void){
 
         vec3 ptLightDir = normalize(ptLightPos - mvPos.xyz);
         vec3 vLight = ambLightCol + dirLightCol*max(dot(xFormNorm.xyz, dirLightDir),0.0) + ptLightCol*max(dot(xFormNorm.xyz,ptLightDir),0.0);
-        mediump vec4 texelColor = texture2D(texSrc,tCoord);
+        mediump vec4 texelColor;
+        if(useTexture){
+            texelColor = texture2D(texSrc,tCoord);
+            }
+         else{
+            texelColor = vec4(1.0,1.0,1.0,1.0);
+            }
         gl_FragColor = vec4(vLight*texelColor.rgb,texelColor.a*0.9);
 
         }
@@ -121,27 +134,27 @@
             scene = new Scene(gl);
             scene.setProgram(gl,shader_1);
 
-            loadBox(gl,shader_1);
-            //loadWorld(gl,shader_1);
-            loadBall(gl,shader_1);
+            loadBox(shader_1);
+            loadWorld(shader_1);
+            loadBall(shader_1);
 
-            var camera = new Camera(gl);
+            var camera = new Camera();
             camera.orientation.offsetPos(0.0,0.0,8.0);
             camera.setProgram(gl,shader_1);
             scene.set("camera",camera);
 
-            var dirLight = new Light(gl,"dir");
-            dirLight.set("shaderProgram", shader_1);
+            var dirLight = new Light("dir");
+            dirLight.setProgram(gl, shader_1);
             dirLight.set("dirLightDir",[0.22,0.6,1.0]); //example of modification, though currently auto-update
             dirLight.set("dirLightCol",[0.3,1.0,0.5]);
 
 
-            var ambLight = new Light(gl,"amb");
-            ambLight.set("shaderProgram", shader_1);
+            var ambLight = new Light("amb");
+            ambLight.setProgram(gl,shader_1);
             ambLight.set("ambLightCol", [0.2,0.2,0.2]);
 
-            var ptLight = new Light(gl,"pt");
-            ptLight.set("shaderProgram", shader_1);
+            var ptLight = new Light("pt");
+            ptLight.setProgram(gl,shader_1);
             ptLight.set("ptLightPos", [0.0,0.0,0.0]);
             ptLight.set("ptLightCol", [0.3,0.3,0.3]);
 
@@ -194,18 +207,18 @@
         function onKeyUp(ev){
             isKeyDown[ev.keyCode] = false;
         }
-        function loadWorld(gl,shaderProgram) {
+        function loadWorld(shaderProgram) {
             var request = new XMLHttpRequest();
             request.open("GET", "world.txt");
             request.onreadystatechange = function() {
                 if (request.readyState == 4) {
-                    parseWorld(request.responseText,gl,shaderProgram);
+                    parseWorld(request.responseText,shaderProgram);
                 }
-            }
+            };
             request.send();
         }
 
-        function parseWorld(data,gl,shaderProgram){
+        function parseWorld(data,shaderProgram){
             var lines = data.split("\n");
             var vertexCount = 0;
             var vertices = [];
@@ -257,13 +270,13 @@
                 faces: dataObj("faces", new Uint16Array(faces),gl.ELEMENT_ARRAY_BUFFER,vertexCount/9, 3)
             };
 
-            var surface = new Surface(gl,shaderProgram,dataObjs);
-            var texture = new Texture(gl,shaderProgram,"texSrc","image","firefox.png");//change later
-            var f_box = new Entity(gl,shaderProgram,surface,texture);
-            scene.push("obj",f_box);
+            var surface = new Surface(shaderProgram,dataObjs);
+            var texture = new Texture(shaderProgram,"texSrc","image","firefox.png");//change later
+            var world = new Entity(shaderProgram,surface,texture);
+            scene.push("obj",world);
         }
 
-        function loadBox(gl,shaderProgram){
+        function loadBox(shaderProgram){
             var vertices = [
                 // Front face
                 -1.0, -1.0,  1.0,
@@ -376,7 +389,7 @@
                 -1.0,  0.0,  0.0,
                 -1.0,  0.0,  0.0,
                 -1.0,  0.0,  0.0
-            ]
+            ];
 
             var dataObjs = {
                 vPos: dataObj("vPos", new Float32Array(vertices), gl.ARRAY_BUFFER, 24, 3),
@@ -385,13 +398,13 @@
                 faces: dataObj("faces", new Uint16Array(faces), gl.ELEMENT_ARRAY_BUFFER, 12, 3)
             };
 
-            var surface = new Surface(gl,shaderProgram,dataObjs);
-            var texture = new Texture(gl,shaderProgram,"texSrc","image","firefox2.png");//change later
-            var f_box = new Entity(gl,shaderProgram,surface,texture);
+            var surface = new Surface(shaderProgram,dataObjs);
+            var texture = new Texture(shaderProgram,"texSrc","image","firefox2.png");//change later
+            var f_box = new Entity(shaderProgram,surface,texture);
             f_box.orientation.setPos(0,0,0);
             scene.push("obj",f_box);
         }
-        function loadBall(gl,shaderProgram){
+        function loadBall(shaderProgram){
             var latitudeBands = 12;
             var longitudeBands = 12;
             var radius = 1.0;
@@ -450,10 +463,10 @@
                 faces: dataObj("faces", new Uint16Array(faces), gl.ELEMENT_ARRAY_BUFFER, numVert*2, 3)
             };
 
-            var surface = new Surface(gl,shaderProgram,dataObjs);
-            var texture = new Texture(gl,shaderProgram,"texSrc","image","moon.gif");//change later
-            var f_box = new Entity(gl,shaderProgram,surface,texture);
-            scene.push("obj",f_box);
+            var surface = new Surface(shaderProgram,dataObjs);
+            var texture = new Texture(shaderProgram,"texSrc","image","moon.gif");//change later
+            var ball = new Entity(shaderProgram,surface,texture);
+            scene.push("obj",ball);
         }
 
     </SCRIPT>
@@ -464,6 +477,7 @@
         onkeydown="onKeyDown(event)" onkeyup="onKeyUp(event)"></CANVAS>
 
 <input type="checkbox" id="perFrag" checked /> Per-fragment lighting<br/>
+<input type="checkbox" id="useTexture" checked /> Use Texture<br/>
 
 <br>Directional X Component:<br><TEXTAREA id="dirLightX">0.2</TEXTAREA>
 <br>Directional Y Component:<br><TEXTAREA id="dirLightY">0.3</TEXTAREA>

@@ -1,11 +1,11 @@
 /**
  * Created by jamiecho on 10/23/15.
  */
-var Camera = function(gl){
+var Camera = function(){
     this.orientation = new Orientation();
     this.center = [0,0,0];
     //for now
-    this.fov = 45;
+    this.fov = 90;
     this.near = 0.1;
     this.far = 100;
 
@@ -66,15 +66,18 @@ var Camera = function(gl){
     };
     this.setProgram = function(gl,shaderProgram){
 
-        if(this.vMat != undefined && this.pMat != undefined){
-            endBuffer(gl,this.vMat.buf);
-            endBuffer(gl,this.pMat.buf);
+        if(this.gl != undefined){
+            this.gl = gl;
+            this.shaderProgram = shaderProgram;
+            locateUniform(gl,this,shaderProgram,"vMat");
+            locateUniform(gl,this,shaderProgram,"pMat");
         }
-        this.gl = gl;
-        this.shaderProgram = shaderProgram;
-
-        initUniform(gl,this,this.shaderProgram,"vMat",gl.FLOAT_MAT4);
-        initUniform(gl,this,this.shaderProgram,"pMat",gl.FLOAT_MAT4);
+        else{
+            this.gl = gl;
+            this.shaderProgram = shaderProgram;
+            initUniform(gl,this,shaderProgram,"vMat",gl.FLOAT_MAT4);
+            initUniform(gl,this,shaderProgram,"pMat",gl.FLOAT_MAT4);
+        }
 
     };
 

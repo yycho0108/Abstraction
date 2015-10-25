@@ -4,40 +4,49 @@
 //Light is applied across programs
 //therefore it will keep multiple copies of the program.
 
-var Light = function(gl,type){
+var Light = function(type){
     var that = this;
+    this.type = type;
 
-    this.construct = function(gl,type) {
-        if (this.gl !== gl) {
-            this.destruct();
-        }
-        this.gl = gl;
-        this.type = type;
-        this.shaderProgram = [];
-    };
-
-    this.set = function(name,val){
-
-        if(name == "shaderProgram"){
-            this.destruct();
-            this.shaderProgram = val;
+    this.setProgram = function(gl,shaderProgram){
+        if(this.gl !== undefined){
+            this.gl = gl;
+            this.shaderProgram = shaderProgram;
             switch(that.type){
                 case "pt":
-                    initUniform(that.gl,that,val,"ptLightPos", that.gl.FLOAT_VEC3);
-                    initUniform(that.gl,that,val,"ptLightCol", that.gl.FLOAT_VEC3);
+                    locateUniform(that.gl,that,shaderProgram,"ptLightPos");
+                    locateUniform(that.gl,that,shaderProgram,"ptLightCol");
                     break;
                 case "dir":
-                    initUniform(that.gl,that,val,"dirLightDir", that.gl.FLOAT_VEC3);
-                    initUniform(that.gl,that,val,"dirLightCol", that.gl.FLOAT_VEC3);
+                    locateUniform(that.gl,that,shaderProgram,"dirLightDir");
+                    locateUniform(that.gl,that,shaderProgram,"dirLightCol");
                     break;
                 case "amb":
-                    initUniform(that.gl,that,val,"ambLightCol", that.gl.FLOAT_VEC3);
+                    locateUniform(that.gl,that,shaderProgram,"ambLightCol");
                     break;
             }
         }
         else{
-            this[name].buf = val;
+            this.gl = gl;
+            this.shaderProgram = shaderProgram;
+
+            switch(that.type){
+                case "pt":
+                    initUniform(that.gl,that,shaderProgram,"ptLightPos", that.gl.FLOAT_VEC3);
+                    initUniform(that.gl,that,shaderProgram,"ptLightCol", that.gl.FLOAT_VEC3);
+                    break;
+                case "dir":
+                    initUniform(that.gl,that,shaderProgram,"dirLightDir", that.gl.FLOAT_VEC3);
+                    initUniform(that.gl,that,shaderProgram,"dirLightCol", that.gl.FLOAT_VEC3);
+                    break;
+                case "amb":
+                    initUniform(that.gl,that,shaderProgram,"ambLightCol", that.gl.FLOAT_VEC3);
+                    break;
+            }
         }
+    };
+    this.set = function(name,val){
+            this[name].buf = val;
     };
     this.update = function(){
         //ONLY APPLIES TO THIS OCCASION.
@@ -70,7 +79,7 @@ var Light = function(gl,type){
     };
     this.push = function(name,val){
         this[name].push(val);
-    }
+    };
     this.apply = function(){ //setting light for context
         var gl = that.gl;
 
@@ -87,7 +96,7 @@ var Light = function(gl,type){
                 applyUniform(gl,this,"ambLightCol",gl.FLOAT_VEC3);
                 break;
         }
-    }
+    };
     this.destruct = function(){
         switch(type){
             case "pt":
@@ -109,5 +118,5 @@ var Light = function(gl,type){
         }
     }
 
-    this.construct(gl,type);
+
 };
