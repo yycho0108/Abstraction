@@ -97,32 +97,40 @@
 
         uniform vec3 ptLightCol;
         uniform sampler2D texSrc;
+        uniform sampler2D specSrc;
 
         uniform float shiny;
         uniform bool useTexture;
 
 
         void main(void){
+
+        mediump vec4 texelColor;
+        mediump vec4 specColor;
+        if(useTexture){
+            texelColor = texture2D(texSrc,tCoord);
+            specColor = texture2D(specSrc,tCoord);
+            }
+         else{
+            texelColor = vec4(1.0,1.0,1.0,1.0);
+            specColor = vec4(1.0,1.0,1.0,1.0);
+            }
+
+        specColor = texture2D(specSrc,tCoord);
+
         vec3 ptLightDir = normalize(ptLightPosV.xyz - mvPos.xyz);
         vec3 norm = normalize(xFormNorm.xyz);
         vec3 refLightDir = reflect(-ptLightDir,norm);
 
         float dirLightWeight = max(dot(norm, dirLightDir),0.0);
-        float specLightWeight = pow(max(dot(refLightDir, normalize(-mvPos.xyz)), 0.0),shiny);
+        float specLightWeight = pow(max(dot(refLightDir, normalize(-mvPos.xyz)), 0.0),shiny*(255.0 -specColor.r*255.0));
         float ptLightWeight = max(dot(norm,ptLightDir),0.0);
         float diffuseLightWeight = max(dot(norm, ptLightDir), 0.0);
 
         vec3 vLight = ambLightCol + dirLightCol*dirLightWeight + ptLightCol*specLightWeight + ptLightCol*diffuseLightWeight;
 
-        mediump vec4 texelColor;
-        if(useTexture){
-            texelColor = texture2D(texSrc,tCoord);
-            }
-         else{
-            texelColor = vec4(1.0,1.0,1.0,1.0);
-            }
 
-        gl_FragColor = vec4(vLight*texelColor.rgb,texelColor.a*0.9);
+        gl_FragColor = vec4(vLight*texelColor.rgb.rgb,texelColor.a*0.9);
 
         }
     </SCRIPT>
@@ -511,8 +519,9 @@
             };
 
             var surface = new Surface(shaderProgram,dataObjs);
-            var texture = new Texture(shaderProgram,"texSrc","image","moon.gif");//change later
-            var ball = new Entity(shaderProgram,surface,texture);
+            var texture = new Texture(shaderProgram,"texSrc","image","Earth3.jpg");//change later
+           // var specular = new Texture(shaderProgram,"specSrc","image","Earth4.jpg");
+            var ball = new Entity(shaderProgram,surface,texture)
             scene.push("obj",ball);
         }
 

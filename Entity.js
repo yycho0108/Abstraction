@@ -2,10 +2,14 @@
  * Created by jamiecho on 10/23/15.
  */
 
-var Entity = function(shaderProgram,surface,texture){ //has surface, texture, position/rotation.
+var Entity = function(shaderProgram,surface,texture,specular){ //has surface, texture, position/rotation.
 
     this.surface = surface;
     this.texture = texture;//change later
+
+    if(specular !== undefined)
+        this.specular = specular;
+
     this.orientation = new Orientation();
 
     this.update = function(){
@@ -18,6 +22,8 @@ var Entity = function(shaderProgram,surface,texture){ //has surface, texture, po
     this.apply= function(){
         this.texture.apply();
         this.surface.apply();
+        if(this.specular !== undefined)
+            this.specular.apply();
         //this.orientation.apply();
         applyUniform(this.gl,this,"mMat",this.gl.FLOAT_MAT4);
     };
@@ -39,6 +45,8 @@ var Entity = function(shaderProgram,surface,texture){ //has surface, texture, po
         }
         this.surface.setProgram(gl,shaderProgram);
         this.texture.setProgram(gl,shaderProgram);
+        if(this.specular !== undefined)
+            this.specular.setProgram(gl,shaderProgram);
     };
 
     //this.setProgram(gl, shaderProgram);

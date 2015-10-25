@@ -31,7 +31,7 @@ var Texture = function(shaderProgram,name,type,src){ //color, or 2d img?
             if(this.ready){ // = already loaded
                 var gl = this.gl;
 
-                gl.bindTexture(gl.TEXTURE_2D, that["texSrc"].buf);
+                gl.bindTexture(gl.TEXTURE_2D, that[name].buf);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.img);
                 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
                 if (isPOT(this.img.width) && isPOT(this.img.height)) {
