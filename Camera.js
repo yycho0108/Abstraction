@@ -19,9 +19,7 @@ var Camera = function(){
     };
 
     this.update = function(){
-
         var o = this.orientation;
-
         if(isKeyDown[LEFT])
         {
             this.yawRate += 0.05;
@@ -36,10 +34,10 @@ var Camera = function(){
             this.pitchRate -= 0.05;
         }
         if(isKeyDown[UP]){
-            this.speed -= 0.01;
+            this.speed -= 0.02;
         }
         if(isKeyDown[DOWN]){
-            this.speed += 0.01;
+            this.speed += 0.02;
         }
         this.yawRate *= 0.9;
         this.pitchRate *= 0.9;

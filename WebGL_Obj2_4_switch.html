@@ -167,31 +167,32 @@
 
         }
         //user input
-        var dragObj=null;
-        var prevX=0;
-        var prevY=0;
+        var dragView = false;
+        var prevX;
+        var prevY;
         function objFromPt(x,y){
             return scene.obj[0];
         }
         function onMouseUp(ev){
-            dragObj=null;
+            dragView = false;
         }
         function onMouseDown(ev){
-            dragObj=objFromPt(ev.clientX,ev.clientY);
+            dragView = true;
             prevX = ev.clientX;
             prevY = ev.clientY;
         }
         function onMouseMove(ev){
-            var gl = scene.gl;
-            if(dragObj){
-                var p = dragObj.orientation.pos;
-                var q = scene.camera.orientation.pos;
+            if(scene.camera !== undefined && dragView){
                 var curX = ev.clientX;
                 var curY = ev.clientY;
-                p.x += (curX - prevX)/gl.viewportWidth * (gl.viewportWidth/gl.viewportHeight)*Math.abs(p.z- q.z)*Math.tan(scene.camera.fov/2)*2;
-                p.y -= (curY - prevY)/gl.viewportHeight*Math.abs(p.z- q.z)*Math.tan(scene.camera.fov/2)*2;
-                prevX=curX;
-                prevY=curY;
+
+                var o = scene.camera.orientation;
+
+                o.offsetRot( (curY-prevY)/gl.viewportHeight*scene.camera.fov,
+                        (curX-prevX)/gl.viewportHeight*scene.camera.fov,
+                        0)
+                prevX = curX;
+                prevY = curY;
             }
         }
         var isKeyDown = {};
@@ -203,9 +204,16 @@
         var PGDN = 34;
         function onKeyDown(ev){
             isKeyDown[ev.keyCode] = true;
+           ev.preventDefault();
         }
         function onKeyUp(ev){
             isKeyDown[ev.keyCode] = false;
+        }
+        function onMouseWheel(ev){
+            var zoom = -ev.wheelDelta/100;
+            ev.preventDefault();
+            var o =scene.camera.orientation;
+            o.offsetPos(Math.sin(degToRad(o.rot.y))*zoom,0,Math.cos(degToRad(o.rot.y))*zoom);
         }
         function loadWorld(shaderProgram) {
             var request = new XMLHttpRequest();
@@ -474,7 +482,7 @@
 <BODY onload="webGLStart()">
 <CANVAS id="myCanvas" tabindex="0" width="1000" height="1000" onmouseup="onMouseUp(event)"
         onmousedown="onMouseDown(event)" onmousemove="onMouseMove(event)"
-        onkeydown="onKeyDown(event)" onkeyup="onKeyUp(event)"></CANVAS>
+        onkeydown="onKeyDown(event)" onkeyup="onKeyUp(event)" onmousewheel="onMouseWheel(event)"></CANVAS>
 
 <input type="checkbox" id="perFrag" checked /> Per-fragment lighting<br/>
 <input type="checkbox" id="useTexture" checked /> Use Texture<br/>
