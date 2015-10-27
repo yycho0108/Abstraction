@@ -1,8 +1,10 @@
 /**
  * Created by jamiecho on 10/23/15.
  */
-    var once = false;
-var Scene = function(gl){
+var angle = 0;
+var prevTime = new Date().getTime();
+
+var Scene = function(){
     var that =this;
     this.light = [];
     this.obj = [];
@@ -26,7 +28,7 @@ var Scene = function(gl){
             o.update();
             var tmp = new Float32Array(mat4.multiply(that.camera["vMat"].buf,o["mMat"].buf));
             that["xFormMat"].buf =  mat4.transpose(mat4.inverse(tmp));
-            applyUniform(gl,that,"xFormMat",gl.FLOAT_MAT4);
+            applyUniform(that.shaderProgram,"xFormMat",gl.FLOAT_MAT4,that["xFormMat"].buf);
             o.apply();
             o.draw();
         });
@@ -38,16 +40,21 @@ var Scene = function(gl){
         this[name] = value;
     };
     this.run = function run(){
+        var curTime = new Date().getTime();
+        angle += (curTime - prevTime)/50; // = 50 deg per sec
+        prevTime = curTime;
         requestAnimationFrame(run);
         for(var i=0;i<that.obj.length;++i){
             if(!that.obj[i].texture.ready)
             return;
         }
-
         that.useTexture.buf = document.getElementById("useTexture").checked;
         that.shiny.buf = parseFloat(document.getElementById("shiny").value);
-        applyUniform(that.gl,that,"useTexture",gl.BOOL);
-        applyUniform(that.gl,that,"shiny",gl.FLOAT);
+        applyUniform(that.shaderProgram,"useTexture",gl.BOOL,that["useTexture"].buf);
+        applyUniform(that.shaderProgram,"shiny",gl.FLOAT,that["useTexture"].buf);
+
+        that.obj[0].setPos(30*Math.cos(degToRad(angle)),0,30*Math.sin(degToRad(angle)));
+        that.obj[1].setPos(5*Math.cos(degToRad(-angle*3)),0,5*Math.sin(degToRad(-angle*3)));
 
         if(document.getElementById("perFrag").checked){
             that.setProgram(that.gl,shader_2);
@@ -63,14 +70,6 @@ var Scene = function(gl){
             that.obj.forEach(function(o){o.setProgram(gl,shader_1);});
             that.gl.useProgram(shader_1);
         }
-
-        //that.gl.bindFramebuffer(gl.FRAMEBUFFER,fBuf.frameBuffer);
-        //that.draw();
-        //that.gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-        //var tmp  =scene.obj[0].texture.texSrc.buf;
-        //scene.obj[0].texture.texSrc.buf = fBuf.texture;
-        //scene.obj[0].texture.texSrc.buf = tmp;
-
         gl.bindFramebuffer(gl.FRAMEBUFFER,null);
         that.draw();
     };
@@ -78,16 +77,16 @@ var Scene = function(gl){
         if(this.gl != undefined){
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            locateUniform(this.gl,this,this.shaderProgram,"xFormMat");
-            locateUniform(this.gl,this,this.shaderProgram,"useTexture");
-            locateUniform(this.gl,this,this.shaderProgram,"shiny");
+            /*locateUniform(this.shaderProgram,"xFormMat");
+            locateUniform(this.shaderProgram,"useTexture");
+            locateUniform(this.shaderProgram,"shiny");*/
         }
         else {
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            initUniform(this.gl, this, this.shaderProgram, "xFormMat", gl.FLOAT_MAT4);
-            initUniform(this.gl, this, this.shaderProgram, "useTexture", gl.BOOL);
-            initUniform(this.gl, this, this.shaderProgram, "shiny", gl.FLOAT);
+            initUniform(this, this.shaderProgram, "xFormMat", gl.FLOAT_MAT4);
+            initUniform(this, this.shaderProgram, "useTexture", gl.BOOL);
+            initUniform(this, this.shaderProgram, "shiny", gl.FLOAT);
         }
 
     }

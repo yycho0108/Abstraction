@@ -50,7 +50,7 @@ function getDragObj(x,y){
     gl.bindFramebuffer(gl.FRAMEBUFFER,picker.frameBuffer);
     gl.readPixels(x,y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pxls);
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-    //console.log(pxls[0] + "," + pxls[1] + "," + pxls[2] + "," + pxls[3]);
+    console.log(pxls[0] + "," + pxls[1] + "," + pxls[2] + "," + pxls[3]);
 
     var returnObj;
     if(pxls[0] >0 ||  pxls[1]>0 || pxls[2]>0){

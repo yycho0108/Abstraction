@@ -7,7 +7,7 @@
 //normals
 //texCoord
 
-var Surface = function(shaderProgram,dataObjs) {
+var Surface = function(dataObjs) {
     var that = this;
     this.names = Object.keys(dataObjs);
     this.update = function(){
@@ -18,7 +18,7 @@ var Surface = function(shaderProgram,dataObjs) {
     this.apply = function(){
         this.names.forEach(function(name){
             if(that[name].target != that.gl.ELEMENT_ARRAY_BUFFER)
-                applyAttribute(that.gl,that,name);
+                applyAttribute(that.shaderProgram,that,name,that[name].buf);
         });
 
     };
@@ -32,16 +32,16 @@ var Surface = function(shaderProgram,dataObjs) {
         if(this.gl !== undefined){
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            this.names.forEach(function(name){
+            /*this.names.forEach(function(name){
                 var d = dataObjs[name];
                 if((dataObjs[name].target != that.gl.ELEMENT_ARRAY_BUFFER)){
-                    locateAttribute(that.gl,that,that.shaderProgram,d.name);
+                    //locateAttribute(that.shaderProgram,d.name);
 
                 }
                 else{
                     //locateAttribute(that.gl,that,that.shaderProgram, d.name);
                 }
-            });
+            });*/
         }
         else{
             this.gl = gl;
@@ -49,10 +49,10 @@ var Surface = function(shaderProgram,dataObjs) {
             this.names.forEach(function(name){
                 var d = dataObjs[name];
                 if((dataObjs[name].target != that.gl.ELEMENT_ARRAY_BUFFER)){
-                    initAttribute(that.gl,that,that.shaderProgram,d.name,d.val,d.target,d.numItem,d.itemSize);
+                    initAttribute(that.shaderProgram,that,d.name,d.val,d.target,d.numItem,d.itemSize);
                 }
                 else{
-                    that[name] = initBuffer(that.gl, d.val, d.target, d.numItem, d.itemSize);
+                    that[name] = initBuffer(d.val, d.target, d.numItem, d.itemSize);
                 }
             });
         }

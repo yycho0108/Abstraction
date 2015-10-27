@@ -181,13 +181,16 @@
             shader_pick = getProgram(gl,["pick_vShader", "pick_fShader"]);
             gl.useProgram(shader_1);
 
-            scene = new Scene(gl);
+            scene = new Scene();
             scene.setProgram(gl,shader_1);
 
-            //loadBox(shader_1);
-            //loadWorld(shader_1);
-            loadBall(shader_1);
-            loadTeapot(shader_1);
+            //loadBox();
+            //loadWorld();
+            loadBall();
+            loadBall(null,new Texture("texSrc","image","moon.gif"));
+            scene.obj[1].setParent(scene.obj[0]);
+
+            loadTeapot();
             var camera = new Camera();
             camera.orientation.offsetPos(0.0,0.0,8.0);
             camera.setProgram(gl,shader_1);
@@ -197,7 +200,6 @@
             dirLight.setProgram(gl, shader_1);
             dirLight.set("dirLightDir",[0.22,0.6,1.0]); //example of modification, though currently auto-update
             dirLight.set("dirLightCol",[0.3,1.0,0.5]);
-
 
             var ambLight = new Light("amb");
             ambLight.setProgram(gl,shader_1);
@@ -221,9 +223,6 @@
         var dragObj = null;
         var prevX;
         var prevY;
-        function objFromPt(x,y){
-            return scene.obj[0];
-        }
         function onMouseUp(ev){
             switch(ev.which){
                 case 1:
@@ -283,7 +282,7 @@
 
             var scaleFactor = 2*Math.tan(degToRad(scene.camera.fov/2))/gl.viewportHeight*vec3.length(dPos);
             var dObj = [scaleFactor*dX, scaleFactor*dY, 0];
-            console.log(dObj[0] + "," + dObj[1] + "," + dObj[2]);
+           // console.log(dObj[0] + "," + dObj[1] + "," + dObj[2]);
             var rotMat = mat4.create();
             mat4.identity(rotMat);
             mat4.rotateX(rotMat,degToRad(c.rot.x));
@@ -313,18 +312,18 @@
             var o =scene.camera.orientation;
             o.offsetPos(Math.sin(degToRad(o.rot.y))*zoom,0,Math.cos(degToRad(o.rot.y))*zoom);
         }
-        function loadWorld(shaderProgram) {
+        function loadWorld() {
             var request = new XMLHttpRequest();
             request.open("GET", "world.txt");
             request.onreadystatechange = function() {
                 if (request.readyState == 4) {
-                    parseWorld(request.responseText,shaderProgram);
+                    parseWorld(request.responseText);
                 }
             };
             request.send();
         }
 
-        function parseWorld(data,shaderProgram){
+        function parseWorld(data){
             var lines = data.split("\n");
             var vertexCount = 0;
             var vertices = [];
@@ -376,22 +375,22 @@
                 faces: dataObj("faces", new Uint16Array(faces),gl.ELEMENT_ARRAY_BUFFER,vertexCount/9, 3)
             };
 
-            var surface = new Surface(shaderProgram,dataObjs);
-            var texture = new Texture(shaderProgram,"texSrc","image","firefox.png");//change later
-            var world = new Entity(shaderProgram,surface,texture);
+            var surface = new Surface(dataObjs);
+            var texture = new Texture("texSrc","image","firefox.png");//change later
+            var world = new Entity(surface,texture);
             scene.push("obj",world);
         }
-        function loadTeapot(shaderProgram) {
+        function loadTeapot() {
             var request = new XMLHttpRequest();
             request.open("GET", "Teapot.json");
             request.onreadystatechange = function() {
                 if (request.readyState == 4) {
-                    parseTeapot(JSON.parse(request.responseText),shaderProgram);
+                    parseTeapot(JSON.parse(request.responseText));
                 }
-            }
+            };
             request.send();
         }
-        function parseTeapot(data,shaderProgram){
+        function parseTeapot(data){
             var ptCount = data.vPos.length;
             var dataObjs = {
                 vPos: dataObj("vPos", new Float32Array(data.vPos),gl.ARRAY_BUFFER,ptCount,3),
@@ -399,12 +398,12 @@
                 vNormal: dataObj("vNormal", new Float32Array(data.vNormal),gl.ARRAY_BUFFER, ptCount, 3),
                 faces: dataObj("faces", new Uint16Array(data.faces),gl.ELEMENT_ARRAY_BUFFER,ptCount/3, 3)
             };
-            var surface = new Surface(shaderProgram,dataObjs);
-            var texture = new Texture(shaderProgram,"texSrc","image","metalSurf.jpg");
-            var teapot = new Entity(shaderProgram,surface,texture);
+            var surface = new Surface(dataObjs);
+            var texture = new Texture("texSrc","image","metalSurf.jpg");
+            var teapot = new Entity(surface,texture);
             scene.push("obj",teapot);
         }
-        function loadBox(shaderProgram){
+        function loadBox(){
             var vertices = [
                 // Front face
                 -1.0, -1.0,  1.0,
@@ -526,13 +525,13 @@
                 faces: dataObj("faces", new Uint16Array(faces), gl.ELEMENT_ARRAY_BUFFER, 12, 3)
             };
 
-            var surface = new Surface(shaderProgram,dataObjs);
-            var texture = new Texture(shaderProgram,"texSrc","image","firefox2.png");//change later
-            var f_box = new Entity(shaderProgram,surface,texture);
+            var surface = new Surface(dataObjs);
+            var texture = new Texture("texSrc","image","firefox2.png");//change later
+            var f_box = new Entity(surface,texture);
             f_box.orientation.setPos(0,0,0);
             scene.push("obj",f_box);
         }
-        function loadBall(shaderProgram){
+        function loadBall(surface,texture){
             var latitudeBands = 12;
             var longitudeBands = 12;
             var radius = 1.0;
@@ -591,13 +590,12 @@
                 faces: dataObj("faces", new Uint16Array(faces), gl.ELEMENT_ARRAY_BUFFER, numVert*2, 3)
             };
 
-            var surface = new Surface(shaderProgram,dataObjs);
-            var texture = new Texture(shaderProgram,"texSrc","image","Earth3.jpg");//change later
+            var s = surface||new Surface(dataObjs);
+            var t = texture||new Texture("texSrc","image","Earth3.jpg");//change later
            // var specular = new Texture(shaderProgram,"specSrc","image","Earth4.jpg");
-            var ball = new Entity(shaderProgram,surface,texture)
+            var ball = new Entity(s,t);
             scene.push("obj",ball);
         }
-
     </SCRIPT>
     </HEAD>
 <BODY onload="webGLStart()" onmouseup="onMouseUp(event)">

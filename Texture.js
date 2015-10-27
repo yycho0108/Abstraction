@@ -1,7 +1,7 @@
 /**
  * Created by jamiecho on 10/23/15.
  */
-var Texture = function(shaderProgram,name,type,src){ //color, or 2d img?
+var Texture = function(name,type,src){ //color, or 2d img?
     var that = this;
 
     this.name=name;
@@ -14,19 +14,19 @@ var Texture = function(shaderProgram,name,type,src){ //color, or 2d img?
     };
     this.apply = function(){
         var gl = this.gl;
-        applyUniform(gl,this,this.name,gl.SAMPLER_2D);
+        applyUniform(this.shaderProgram,this.name,gl.SAMPLER_2D,this[name].buf);
     };
     this.setProgram = function(gl, shaderProgram){
         if(this.gl !== undefined)
         {
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            locateUniform(this.gl,this,this.shaderProgram,this.name);
+            //locateUniform(this.shaderProgram,this.name);
         }
         else {
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            initUniform(this.gl,this,this.shaderProgram,this.name,this.gl.SAMPLER_2D);
+            initUniform(this,this.shaderProgram,this.name,this.gl.SAMPLER_2D);
 
             if(this.ready){ // = already loaded
                 var gl = this.gl;

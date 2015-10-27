@@ -2,7 +2,7 @@
  * Created by jamiecho on 10/23/15.
  */
 
-var Entity = function(shaderProgram,surface,texture,specular){ //has surface, texture, position/rotation.
+var Entity = function(surface,texture,specular){ //has surface, texture, position/rotation.
 
     this.surface = surface;
     this.texture = texture;//change later
@@ -12,10 +12,29 @@ var Entity = function(shaderProgram,surface,texture,specular){ //has surface, te
     this.orientation = new Orientation();
 
     this.update = function(){
-        mat4.identity(this["mMat"].buf);
-        mat4.translate(this["mMat"].buf,[this.orientation.pos.x,this.orientation.pos.y,this.orientation.pos.z]);
+        this["mMat"].buf = this.localMat(); //now recursive!
+        //Individual stuff...
+
+
+        //mat4.identity(this["mMat"].buf);
+        //mat4.translate(this["mMat"].buf,[this.orientation.pos.x,this.orientation.pos.y,this.orientation.pos.z]);
         //mat4.rotate(this["mMat"].buf, angle, [0,1,0]);
         //ADDED ONLY TO SHOW THE LIGHT EFFECT!!
+
+    };
+    this.localMat = function(){
+        var m = mat4.create();
+        var o = this.orientation;
+        mat4.identity(m);
+        mat4.rotateX(m, o.rot.x);
+        mat4.rotateY(m, o.rot.y);
+        mat4.translate(m,[o.pos.x,o.pos.y,o.pos.z]);
+
+        if (this.parentEntity){
+            return mat4.multiply(m,this.parentEntity.localMat()); //maybe reverse order?
+        }else{
+            return m;
+        }
 
     };
     this.apply= function(){
@@ -24,8 +43,8 @@ var Entity = function(shaderProgram,surface,texture,specular){ //has surface, te
         if(this.specular !== undefined)
             this.specular.apply();
         //this.orientation.apply();
-        applyUniform(this.gl,this,"mMat",this.gl.FLOAT_MAT4);
-        applyUniform(this.gl,this,"objColor",this.gl.FLOAT_VEC3);
+        applyUniform(this.shaderProgram,"mMat",this.gl.FLOAT_MAT4,this["mMat"].buf);
+        applyUniform(this.shaderProgram,"objColor",this.gl.FLOAT_VEC3,this["objColor"].buf);
     };
     this.draw = function(){
         this.gl.useProgram(this.shaderProgram);
@@ -35,14 +54,14 @@ var Entity = function(shaderProgram,surface,texture,specular){ //has surface, te
         if(this.gl !== undefined){
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            locateUniform(gl,this,shaderProgram,"mMat");
-            locateUniform(gl,this,shaderProgram,"objColor");
+            //locateUniform(shaderProgram,"mMat");
+            //locateUniform(shaderProgram,"objColor");
         }
         else{
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            initUniform(gl,this,shaderProgram,"mMat",gl.FLOAT_MAT4);
-            initUniform(gl,this,shaderProgram,"objColor",gl.FLOAT_VEC3);
+            initUniform(this,shaderProgram,"mMat",gl.FLOAT_MAT4);
+            initUniform(this,shaderProgram,"objColor",gl.FLOAT_VEC3);
 
             if(Entity.objColor == undefined){
                 Entity.objColor = [0,0,0];
@@ -64,7 +83,11 @@ var Entity = function(shaderProgram,surface,texture,specular){ //has surface, te
         if(this.specular !== undefined)
             this.specular.setProgram(gl,shaderProgram);
     };
-
+    this.setParent = function(obj){
+        this.parentEntity = obj;
+    };
+    this.offsetPos = function(dx,dy,dz){this.orientation.offsetPos(dx,dy,dz);};
+    this.setPos = function(x,y,z){this.orientation.setPos(x,y,z);}
     //this.setProgram(gl, shaderProgram);
 
 };
