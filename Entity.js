@@ -6,7 +6,6 @@ var Entity = function(shaderProgram,surface,texture,specular){ //has surface, te
 
     this.surface = surface;
     this.texture = texture;//change later
-
     if(specular !== undefined)
         this.specular = specular;
 
@@ -26,22 +25,39 @@ var Entity = function(shaderProgram,surface,texture,specular){ //has surface, te
             this.specular.apply();
         //this.orientation.apply();
         applyUniform(this.gl,this,"mMat",this.gl.FLOAT_MAT4);
+        applyUniform(this.gl,this,"objColor",this.gl.FLOAT_VEC3);
     };
     this.draw = function(){
         this.gl.useProgram(this.shaderProgram);
         this.surface.draw();
     };
     this.setProgram = function(gl, shaderProgram){
-
         if(this.gl !== undefined){
             this.gl = gl;
             this.shaderProgram = shaderProgram;
             locateUniform(gl,this,shaderProgram,"mMat");
+            locateUniform(gl,this,shaderProgram,"objColor");
         }
         else{
             this.gl = gl;
             this.shaderProgram = shaderProgram;
             initUniform(gl,this,shaderProgram,"mMat",gl.FLOAT_MAT4);
+            initUniform(gl,this,shaderProgram,"objColor",gl.FLOAT_VEC3);
+
+            if(Entity.objColor == undefined){
+                Entity.objColor = [0,0,0];
+            }
+
+            Entity.objColor[2] += 0.1;
+            if(Entity.objColor[2] >= 1){
+                Entity.objColor[2] = 0;
+                Entity.objColor[1] += 0.1;
+                if(Entity.objColor[1] >= 1){
+                    Entity.objColor[0] += 0.1;
+                    Entity.objColor[1] = 0;
+                }
+            }
+            vec3.set(Entity.objColor,this.objColor.buf);
         }
         this.surface.setProgram(gl,shaderProgram);
         this.texture.setProgram(gl,shaderProgram);

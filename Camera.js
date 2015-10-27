@@ -44,11 +44,12 @@ var Camera = function(){
         this.speed *= 0.8;
 
         o.offsetRot(this.pitchRate,this.yawRate,0.0);
-        o.offsetPos(Math.sin(degToRad(o.rot.y))*this.speed,0,Math.cos(degToRad(o.rot.y))*this.speed);
+        o.offsetPos(Math.sin(degToRad(o.rot.y))*this.speed,-Math.sin(degToRad(o.rot.x))*this.speed,Math.cos(degToRad(o.rot.y))*this.speed);
 
         mat4.identity(this["vMat"].buf);
         mat4.rotateX(this["vMat"].buf,degToRad(-o.rot.x));
         mat4.rotateY(this["vMat"].buf,degToRad(-o.rot.y));
+        //mat4.translate(this["vMat"].buf,[])
         mat4.translate(this["vMat"].buf,[-o.pos.x, -o.pos.y, -o.pos.z]);
 
         /*

@@ -36,9 +36,10 @@ var Surface = function(shaderProgram,dataObjs) {
                 var d = dataObjs[name];
                 if((dataObjs[name].target != that.gl.ELEMENT_ARRAY_BUFFER)){
                     locateAttribute(that.gl,that,that.shaderProgram,d.name);
+
                 }
                 else{
-                    locateAttribute(that.gl,that,that.shaderProgram, d.name);
+                    //locateAttribute(that.gl,that,that.shaderProgram, d.name);
                 }
             });
         }

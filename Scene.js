@@ -1,6 +1,7 @@
 /**
  * Created by jamiecho on 10/23/15.
  */
+    var once = false;
 var Scene = function(gl){
     var that =this;
     this.light = [];
@@ -10,7 +11,7 @@ var Scene = function(gl){
     this.draw = function(){
         var gl = this.gl;
         gl.clearColor(0.0,0.0,0.0,1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT,gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.viewport(0,0,gl.viewportWidth,gl.viewportHeight);
         gl.enable(gl.DEPTH_TEST);
         this.camera.update();
@@ -62,15 +63,32 @@ var Scene = function(gl){
             that.obj.forEach(function(o){o.setProgram(gl,shader_1);});
             that.gl.useProgram(shader_1);
         }
+
+        //that.gl.bindFramebuffer(gl.FRAMEBUFFER,fBuf.frameBuffer);
+        //that.draw();
+        //that.gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+        //var tmp  =scene.obj[0].texture.texSrc.buf;
+        //scene.obj[0].texture.texSrc.buf = fBuf.texture;
+        //scene.obj[0].texture.texSrc.buf = tmp;
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER,null);
         that.draw();
     };
     this.setProgram = function(gl,shaderProgram){
-        endBuffer(this.gl,this.xFormMat);
-        endBuffer(this.gl,this.useTexture);
-        this.gl = gl;
-        this.shaderProgram = shaderProgram;
-        initUniform(this.gl,this,this.shaderProgram,"xFormMat",gl.FLOAT_MAT4);
-        initUniform(this.gl,this,this.shaderProgram,"useTexture",gl.BOOL);
-        initUniform(this.gl,this,this.shaderProgram,"shiny",gl.FLOAT);
+        if(this.gl != undefined){
+            this.gl = gl;
+            this.shaderProgram = shaderProgram;
+            locateUniform(this.gl,this,this.shaderProgram,"xFormMat");
+            locateUniform(this.gl,this,this.shaderProgram,"useTexture");
+            locateUniform(this.gl,this,this.shaderProgram,"shiny");
+        }
+        else {
+            this.gl = gl;
+            this.shaderProgram = shaderProgram;
+            initUniform(this.gl, this, this.shaderProgram, "xFormMat", gl.FLOAT_MAT4);
+            initUniform(this.gl, this, this.shaderProgram, "useTexture", gl.BOOL);
+            initUniform(this.gl, this, this.shaderProgram, "shiny", gl.FLOAT);
+        }
+
     }
 };
