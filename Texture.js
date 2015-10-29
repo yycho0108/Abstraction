@@ -14,7 +14,7 @@ var Texture = function(name,type,src){ //color, or 2d img?
     };
     this.apply = function(){
         var gl = this.gl;
-        applyUniform(this.shaderProgram,this.name,gl.SAMPLER_2D,this[name].buf);
+        applyUniform(this.shaderProgram,this.name,this[name].buf);
     };
     this.setProgram = function(gl, shaderProgram){
         if(this.gl !== undefined)
@@ -26,7 +26,7 @@ var Texture = function(name,type,src){ //color, or 2d img?
         else {
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            initUniform(this,this.shaderProgram,this.name,this.gl.SAMPLER_2D);
+            initUniform(this,this.shaderProgram,this.name);
 
             if(this.ready){ // = already loaded
                 var gl = this.gl;

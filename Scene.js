@@ -28,7 +28,7 @@ var Scene = function(){
             o.update();
             var tmp = new Float32Array(mat4.multiply(that.camera["vMat"].buf,o["mMat"].buf));
             that["xFormMat"].buf =  mat4.transpose(mat4.inverse(tmp));
-            applyUniform(that.shaderProgram,"xFormMat",gl.FLOAT_MAT4,that["xFormMat"].buf);
+            applyUniform(that.shaderProgram,"xFormMat",that["xFormMat"].buf);
             o.apply();
             o.draw();
         });
@@ -45,13 +45,13 @@ var Scene = function(){
         prevTime = curTime;
         requestAnimationFrame(run);
         for(var i=0;i<that.obj.length;++i){
-            if(!that.obj[i].texture.ready)
+            if(that.obj[i].texture && !that.obj[i].texture.ready)
             return;
         }
         that.useTexture.buf = document.getElementById("useTexture").checked;
         that.shiny.buf = parseFloat(document.getElementById("shiny").value);
-        applyUniform(that.shaderProgram,"useTexture",gl.BOOL,that["useTexture"].buf);
-        applyUniform(that.shaderProgram,"shiny",gl.FLOAT,that["useTexture"].buf);
+        applyUniform(that.shaderProgram,"useTexture",that["useTexture"].buf);
+        applyUniform(that.shaderProgram,"shiny",that["useTexture"].buf);
 
         that.obj[0].setPos(30*Math.cos(degToRad(angle)),0,30*Math.sin(degToRad(angle)));
         that.obj[1].setPos(5*Math.cos(degToRad(-angle*3)),0,5*Math.sin(degToRad(-angle*3)));
@@ -84,9 +84,9 @@ var Scene = function(){
         else {
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            initUniform(this, this.shaderProgram, "xFormMat", gl.FLOAT_MAT4);
-            initUniform(this, this.shaderProgram, "useTexture", gl.BOOL);
-            initUniform(this, this.shaderProgram, "shiny", gl.FLOAT);
+            initUniform(this, this.shaderProgram, "xFormMat");
+            initUniform(this, this.shaderProgram, "useTexture");
+            initUniform(this, this.shaderProgram, "shiny");
         }
 
     }

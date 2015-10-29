@@ -61,8 +61,8 @@ var Camera = function(){
     this.apply = function(){
 
         var gl = this.gl;
-        applyUniform(this.shaderProgram,"vMat",gl.FLOAT_MAT4,this["vMat"].buf);
-        applyUniform(this.shaderProgram,"pMat",gl.FLOAT_MAT4,this["pMat"].buf);
+        applyUniform(this.shaderProgram,"vMat",this["vMat"].buf);
+        applyUniform(this.shaderProgram,"pMat",this["pMat"].buf);
        // applyUniform(gl,this,"cPos",gl.FLOAT_VEC3);
     };
     this.setProgram = function(gl,shaderProgram){
@@ -77,8 +77,8 @@ var Camera = function(){
         else{
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            initUniform(this,shaderProgram,"vMat",gl.FLOAT_MAT4);
-            initUniform(this,shaderProgram,"pMat",gl.FLOAT_MAT4);
+            initUniform(this,shaderProgram,"vMat");
+            initUniform(this,shaderProgram,"pMat");
             //initUniform(gl,this,shaderProgram,"cPos",gl.FLOAT_VEC3);
         }
 

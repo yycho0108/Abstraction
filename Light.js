@@ -12,7 +12,7 @@ var Light = function(type){
         if(this.gl !== undefined){
             this.gl = gl;
             this.shaderProgram = shaderProgram;
-            switch(that.type){
+           /* switch(that.type){
                 case "pt":
                     locateUniform(shaderProgram,"ptLightPos");
                     locateUniform(shaderProgram,"ptLightCol");
@@ -24,7 +24,7 @@ var Light = function(type){
                 case "amb":
                     locateUniform(shaderProgram,"ambLightCol");
                     break;
-            }
+            }*/
         }
         else{
             this.gl = gl;
@@ -32,15 +32,15 @@ var Light = function(type){
 
             switch(that.type){
                 case "pt":
-                    initUniform(that,shaderProgram,"ptLightPos", that.gl.FLOAT_VEC3);
-                    initUniform(that,shaderProgram,"ptLightCol", that.gl.FLOAT_VEC3);
+                    initUniform(that,shaderProgram,"ptLightPos");
+                    initUniform(that,shaderProgram,"ptLightCol");
                     break;
                 case "dir":
-                    initUniform(that,shaderProgram,"dirLightDir", that.gl.FLOAT_VEC3);
-                    initUniform(that,shaderProgram,"dirLightCol", that.gl.FLOAT_VEC3);
+                    initUniform(that,shaderProgram,"dirLightDir");
+                    initUniform(that,shaderProgram,"dirLightCol");
                     break;
                 case "amb":
-                    initUniform(that,shaderProgram,"ambLightCol", that.gl.FLOAT_VEC3);
+                    initUniform(that,shaderProgram,"ambLightCol");
                     break;
             }
         }
@@ -85,15 +85,15 @@ var Light = function(type){
 
         switch(that.type){
             case "dir":
-                applyUniform(this.shaderProgram,"dirLightDir",gl.FLOAT_VEC3,this["dirLightDir"].buf);
-                applyUniform(this.shaderProgram,"dirLightCol",gl.FLOAT_VEC3,this["dirLightCol"].buf);
+                applyUniform(this.shaderProgram,"dirLightDir",this["dirLightDir"].buf);
+                applyUniform(this.shaderProgram,"dirLightCol",this["dirLightCol"].buf);
                 break;
             case "pt":
-                applyUniform(this.shaderProgram,"ptLightPos",gl.FLOAT_VEC3,this["ptLightPos"].buf);
-                applyUniform(this.shaderProgram,"ptLightCol",gl.FLOAT_VEC3,this["ptLightCol"].buf);
+                applyUniform(this.shaderProgram,"ptLightPos",this["ptLightPos"].buf);
+                applyUniform(this.shaderProgram,"ptLightCol",this["ptLightCol"].buf);
                 break;
             case "amb":
-                applyUniform(this.shaderProgram,"ambLightCol",gl.FLOAT_VEC3,this["ambLightCol"].buf);
+                applyUniform(this.shaderProgram,"ambLightCol",this["ambLightCol"].buf);
                 break;
         }
     };

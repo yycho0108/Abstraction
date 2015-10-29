@@ -2,6 +2,7 @@
 <HTML>
 <META HTTP-EQUIV="content-type" content="text/html charset=utf-8">
 <HEAD>
+    <script type = "text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <SCRIPT type = "text/javascript" src="gl-matrix.min.js"></SCRIPT>
     <SCRIPT type = "vShader" id="perVert_vShader">
         attribute vec3 vPos;
@@ -161,6 +162,7 @@
     <SCRIPT type="text/javascript" src="Entity.js"></SCRIPT>
     <SCRIPT type="text/javascript" src="frameBuffer.js"></SCRIPT>
     <SCRIPT type="text/javascript" src="Picking.js"></SCRIPT>
+    <SCRIPT type="text/javascript" src="PerlinNoise.js"></SCRIPT>
 
     <SCRIPT type="text/javascript">
         var scene;
@@ -188,9 +190,12 @@
             //loadWorld();
             loadBall();
             loadBall(null,new Texture("texSrc","image","moon.gif"));
+            loadObj("angel.obj");
             scene.obj[1].setParent(scene.obj[0]);
 
             loadTeapot();
+            perlinNoiseField(5,20,true);
+
             var camera = new Camera();
             camera.orientation.offsetPos(0.0,0.0,8.0);
             camera.setProgram(gl,shader_1);
@@ -310,7 +315,7 @@
             var zoom = -ev.wheelDelta/100;
             ev.preventDefault();
             var o =scene.camera.orientation;
-            o.offsetPos(Math.sin(degToRad(o.rot.y))*zoom,0,Math.cos(degToRad(o.rot.y))*zoom);
+            o.offsetPos(Math.sin(degToRad(o.rot.y))*zoom,-Math.sin(degToRad(o.rot.x))*zoom,Math.cos(degToRad(o.rot.y))*zoom);
         }
         function loadWorld() {
             var request = new XMLHttpRequest();
@@ -596,12 +601,87 @@
             var ball = new Entity(s,t);
             scene.push("obj",ball);
         }
+
+        function perlinNoiseField(n,res,makeVertex){
+            var grid = new gradGrid(n);
+            var x,z;
+            var stepSize = n/res;
+
+            if(makeVertex){
+                var faces = [];
+                var vPos = [];
+                var vNormal = [];
+                var texCoord = [];
+                var index = 0;
+                var i,j;
+                for(x=0,i=0;i<res;x+=stepSize, ++i){
+                    for(z=0,j=0;j<res;z+=stepSize, ++j){
+
+                        var y1 = pNoise(grid,x,z);
+                        var y2 = pNoise(grid,x+stepSize,z);
+                        var y3 = pNoise(grid,x,z+stepSize);
+                        var y4 = pNoise(grid,x+stepSize,z+stepSize);
+
+                        var v1 = [x,y1,z];
+                        var v2 = [x+stepSize,y2,z];
+                        var v3 = [x,y3,z+stepSize];
+                        var v4 = [x+stepSize,y4,z+stepSize];
+                        vPos = vPos.concat(v1,v2,v3,v3,v2,v4);
+
+                        var v5 = vec3.subtract(v1,v2,[0,0,0]);
+                        var v6 = vec3.subtract(v2,v3,[0,0,0]);
+
+                        var v7 = vec3.subtract(v3,v2,[0,0,0]);
+                        var v8 = vec3.subtract(v2,v4,[0,0,0]);
+
+                        var vn1 = vec3.normalize(vec3.cross(v5,v6));
+                        var vn2 = vec3.normalize(vec3.cross(v7,v8));
+
+                       // vNormal = vNormal.concat(vn1).concat(vn1).concat(vn1).concat(vn2).concat(vn2).concat(vn2);
+                        vNormal = vNormal.concat(vn1,vn1,vn1,vn2,vn2,vn2);
+                        texCoord.push(
+                                x/n,z/n,
+                                (x+stepSize)/n,z/n,
+                                x/n,(z+stepSize)/n,
+                                x/n,(z+stepSize)/n,
+                                (x+stepSize)/n,z/n,
+                                (x+stepSize)/n,(z+stepSize)/n);
+                        faces.push(index,index+1,index+2,index+3,index+4,index+5);
+                        index += 6;
+                    }
+                }
+
+                var dataObjs = {
+                    vPos: dataObj("vPos", new Float32Array(vPos), gl.ARRAY_BUFFER, index, 3),
+                    texCoord: dataObj("texCoord", new Float32Array(texCoord), gl.ARRAY_BUFFER, index, 2),
+                    vNormal: dataObj("vNormal", new Float32Array(vNormal),gl.ARRAY_BUFFER, index, 3),
+                    faces: dataObj("faces", new Uint16Array(faces),gl.ELEMENT_ARRAY_BUFFER,index/3, 3)
+                };
+
+                var surface = new Surface(dataObjs,gl.POINTS);
+                var texture = new Texture("texSrc","image","firefox.png");//change later
+                var perlin = new Entity(surface,texture);
+                    scene.push("obj",perlin);
+            }
+            else{
+                var field = [];
+                for(x=0;x<n;x+=stepSize){
+                    for(z=0;z<n;z+=stepSize){
+                        field.push(pNoise(grid,x,z));
+                    }
+                }
+            }
+
+            return field;
+
+            /*var w = Math.floor(n/res);
+             var h = w;
+             return new Arr2D(field,w,h,1);*/
+        }
     </SCRIPT>
     </HEAD>
-<BODY onload="webGLStart()" onmouseup="onMouseUp(event)">
-<CANVAS id="myCanvas" tabindex="0" width="1024" height="1024"
-        onmousedown="onMouseDown(event)" onmousemove="onMouseMove(event)"
-        onkeydown="onKeyDown(event)" onkeyup="onKeyUp(event)" onmousewheel="onMouseWheel(event)"></CANVAS>
+<BODY>
+<CANVAS id="myCanvas" tabindex="0" width="1024" height="1024"></CANVAS>
 
 <input type="checkbox" id="perFrag" checked /> Per-fragment lighting<br/>
 <input type="checkbox" id="useTexture" checked /> Use Texture<br/>
@@ -641,6 +721,16 @@
         <td><TEXTAREA id="shiny">0.3</TEXTAREA></td>
     </tr>
 </table>
-
 </BODY>
+
+<script type="text/javascript">
+    $(document).ready(webGLStart);
+    $("#myCanvas").mousedown(onMouseDown);
+    $("#myCanvas").on('mousewheel',function(ev){onMouseWheel(ev.originalEvent);});
+    $(document).mousemove(onMouseMove);
+    $(document).mouseup(onMouseUp);
+    $("#myCanvas").keydown(onKeyDown);
+    $("#myCanvas").keyup(onKeyUp);
+</script>
+
 </HTML>

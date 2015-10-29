@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<meta http-equiv="content-type" content="text/html charset=utf-8">
+<head>
+    <script type = "text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script type = "text/javascript" src="gl-matrix.min.js"></script>
+    <script type = "text/javascript" src="WebglCommon.js"></script>
+    <script type = "text/javascript" src="clothes.js"></script>
+    <script type="text/javascript" src="PerlinNoise.js"></script>
+    <script type = "vShader" id="vShader">
+        attribute vec3 vPos;
+        uniform mat4 mvMat;
+        uniform mat4 pMat;
+
+        void main(void){
+        gl_Position = pMat*mvMat*vec4(vPos,1.0);
+        gl_PointSize = 5.0;
+        }
+    </script>
+
+    <script type = "fShader" id="fShader">
+        precision mediump float;
+        void main(void){
+        gl_FragColor = vec4(0.0,0.0,0.0,1.0);
+        }
+    </script>
+    <script type = "text/javascript">
+        var canvas;
+        var gl;
+        var shaderProgram;
+        var buf;
+        var pNoiseBuf;
+        var lines;
+        function webGLStart(){
+            canvas = document.getElementById("myCanvas");
+            initGL(canvas);
+            var f = new Float32Array(perlinNoiseField(3,0.1,true));
+            shaderProgram = getProgram(gl,["vShader","fShader"]);
+            gl.useProgram(shaderProgram);
+            var clothes = createClothes(10,10,1);
+            gl.enable(gl.DEPTH_TEST);
+            gl.enableVertexAttribArray(0);
+            gl.clearColor(1.0,1.0,1.0,1.0);
+            buf = gl.createBuffer();
+            pNoiseBuf = gl.createBuffer();
+            pNoiseBuf.w = 3/0.1;
+            pNoiseBuf.h = 3/0.1;
+            gl.bindBuffer(gl.ARRAY_BUFFER,pNoiseBuf);
+            gl.bufferData(gl.ARRAY_BUFFER,f,gl.STATIC_DRAW);
+            simulate(clothes);
+        }
+    </script>
+</head>
+<canvas id="myCanvas" width="500" height="500"></canvas>
+<script type="text/javascript">
+    $(document).ready(webGLStart());
+</script>
+
+
+</html>
