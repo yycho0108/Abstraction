@@ -24,7 +24,7 @@ Context(GL) and shader programs are directly managed by the window.
 The construction was partially inspired by Three.js, although I hadn't delved
 very deeply in using it. I am building everything from scratch using WebGL APIs.
 
-# Helper functions/scripts
+# self-written helper functions (very rudimentary)
 - DataObj
 - Orientation
 - WebGLCommons (manages buffers, initializing, etc.)
